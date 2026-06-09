@@ -15,8 +15,7 @@ p_load_immResp <- fs::path(processed_data_folder, "hipc_immResp.rds")
 # Read in the files
 expr_all_noNorm <- readRDS(p_load_expr_all_noNorm)
 hipc_clinical <- readRDS(p_load_clinical)
-hipc_immResp <- readRDS(p_load_immResp) %>%
-  dplyr::select(-study_accession)
+hipc_immResp <- readRDS(p_load_immResp)
 
 # Merge together the clinical and immune response dataframes
 merged_hipc_clinical_immresp = full_join(x = hipc_clinical, y = hipc_immResp, by = "participant_id")
