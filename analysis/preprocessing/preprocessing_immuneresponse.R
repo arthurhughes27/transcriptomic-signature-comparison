@@ -14,13 +14,13 @@ library(janitor)
 library(readxl)
 library(purrr)
 
-
 # Specify folder within folder root where the raw data lives
 raw_data_folder = "data-raw"
 processed_data_folder = "data"
 
 # Use fs::path() to specify the data paths robustly
 p_load_elisa <- fs::path(raw_data_folder, "elisa_2025-01-10_01-14-21.xlsx")
+p_load_elispot <- fs::path(raw_data_folder, "elispot_2025-01-10_01-14.xlsx")
 p_load_nAb <- fs::path(raw_data_folder, "neut_ab_titer_2025-01-10_01-13-22.xlsx")
 p_load_hai <- fs::path(raw_data_folder, "hai_2025-01-10_01-13-41.xlsx")
 p_load_clinical <- fs::path(processed_data_folder, "hipc_clinical.rds")
@@ -35,6 +35,10 @@ response_nAb = read_excel(p_load_nAb) %>%
 
 # ELISA response data
 response_elisa = read_excel(p_load_elisa) %>%
+  clean_names()
+
+# ELISPOT response data
+response_elispot = read_excel(p_load_elispot) %>%
   clean_names()
 
 # Clinical data for filtration of participants
@@ -56,26 +60,43 @@ response_nAb = response_nAb %>%
 response_elisa = response_elisa %>%
   filter(participant_id %in% participants)
 
+response_elispot = response_elispot %>%
+  filter(participant_id %in% participants)
+
 # Depending on the assay, there may be multiple viral strains or analytes measured.
 # We rename some columns and add a column for the assay name, so that we can merge these data together.
 
 response_hai = response_hai %>%
   rename(response_strain_analyte = virus) %>%
-  mutate(assay = "hai")
+  mutate(assay = "hai") %>% 
+  dplyr::select(participant_id, gender, race, cohort, study_time_collected, study_time_collected_unit, response_strain_analyte, value_preferred, assay)
 
 response_nAb = response_nAb %>%
   rename(response_strain_analyte = virus) %>%
-  mutate(assay = "nAb")
+  mutate(assay = "nAb") %>% 
+  dplyr::select(participant_id, gender, race, cohort, study_time_collected, study_time_collected_unit, response_strain_analyte, value_preferred, assay)
+
+# For ELISPOT: filter to take only IgG analytes, convert measure into normalised cell count per 100,000 cells
+response_elispot = response_elispot %>%
+  filter(grepl("IgG", analyte)) %>% 
+  rename(response_strain_analyte = analyte) %>%
+  mutate(assay = "elispot",
+         unit_preferred = "analyte count per 100000") %>% 
+  mutate(value_preferred = 100000*spot_number_reported/cell_number_preferred) %>% 
+  filter(value_preferred < 100000,
+         value_preferred > 0) %>% 
+  dplyr::select(participant_id, gender, race, cohort, study_time_collected, study_time_collected_unit, response_strain_analyte, value_preferred, assay)
 
 # Filter ELISA data for IgG and Hepatitis B antibodies
 response_elisa = response_elisa %>%
   filter(grepl("IgG", analyte) |
            analyte == "Hepatitis B Virus Surface Antibody") %>%
   rename(response_strain_analyte = analyte) %>%
-  mutate(assay = "elisa")
+  mutate(assay = "elisa") %>% 
+  dplyr::select(participant_id, gender, race, cohort, study_time_collected, study_time_collected_unit, response_strain_analyte, value_preferred, assay)
 
 # Now merge all the raw response data
-response_raw_merged = bind_rows(response_nAb, response_elisa, response_hai) %>%
+response_raw_merged = bind_rows(response_nAb, response_elisa, response_hai, response_elispot) %>%
   arrange(participant_id) %>%
   distinct()
 
@@ -94,97 +115,97 @@ response_raw_merged_studies = merge(x = response_raw_merged,
                                     by = "participant_id",
                                     all = F)
 
-# There are a series of study-specific errors which have been inferred from the "immuneResponseCallGeneration.R" script in the ImmuneSignatures2 GitHub page.
-# We fix these here.
-# First, "SDY1276" is apparently scaled in log4.
-
-response_raw_merged_studies = response_raw_merged_studies %>%
-  mutate(value_preferred = if_else(
-    study_accession == "SDY1276",
-    4^value_preferred,
-    value_preferred
-  ))
-
-# Next, "SDY1289" has some nAb baseline values at exactly 0, these are set to 1.
-
-response_raw_merged_studies = response_raw_merged_studies %>%
-  mutate(value_preferred = if_else(
-    (
-      study_accession == "SDY1289" &
-        value_preferred == 0 &
-        as.numeric(study_time_collected) == 0
-    ) ,
-    1,
-    value_preferred
-  ))
-
-# "SDY1264" lacks baseline data. The investigators create this row, where the baseline value is set to 1 for everyone.
-
-day_zero <- response_raw_merged_studies %>%
-  filter(study_accession == "SDY1264") %>%        # pull out SDY1264
-  distinct(participant_id, .keep_all = TRUE) %>%   # keep only one row per participant
-  mutate(
-    study_time_collected = 0,
-    # reset time to “0”
-    value_preferred      = 1                     # set preferred value to 1
-  )
-
-# Bind them back on to the full dataset
-response_raw_merged_studies <- bind_rows(response_raw_merged_studies, day_zero)
-
-# "SDY1328" has an incorrect time label. Apparently, the data which is claimed to be taken at day 7 should actually be at day 30.
-
-response_raw_merged_studies = response_raw_merged_studies %>%
-  mutate(study_time_collected = if_else(
-    (study_accession == "SDY1328" &
-       study_time_collected == 7) ,
-    30,
-    study_time_collected
-  ))
-
-# Additionally, this study has some anomalies at day 0, where data suggests these participants have antibody responses prior to vaccination.
-# The investigators set baseline values as well as values of 2.5 to 1.
-
-response_raw_merged_studies = response_raw_merged_studies %>%
-  mutate(value_preferred = if_else((
-    study_accession == "SDY1328" &
-      (value_preferred == 2.5 | study_time_collected == 0)
-  ), 1, value_preferred))
-
-# Furthermore, apparently these values need to be transformed with log2. This also applies to SDY984.
-
-response_raw_merged_studies = response_raw_merged_studies %>%
-  mutate(value_preferred = if_else(((study_accession == "SDY1328" |
-                                       study_accession == "SDY984") &
-                                      assay == "elisa"
-  ), log2(value_preferred), value_preferred))
-
-# For "SDY1260", the values need to be de-transformed from log2.
-
-response_raw_merged_studies = response_raw_merged_studies %>%
-  mutate(value_preferred = if_else(
-    (study_accession == "SDY1260" &
-       assay == "elisa"),
-    2^value_preferred,
-    value_preferred
-  ))
-
-# Furthermore, the IgG serotype values need to be summed within each participant, timepoint, and vaccine.
-
-response_raw_merged_studies <- response_raw_merged_studies %>%
-  group_by(participant_id,
-           study_time_collected,
-           vaccine,
-           vaccine_type,
-           pathogen) %>%
-  mutate(value_preferred = if_else(
-    (study_accession == "SDY1260" & assay == "elisa"),
-    # sum only the SDY1260 values within this group, then log2
-    log2(sum(value_preferred[study_accession == "SDY1260"])),
-    # otherwise leave unchanged
-    value_preferred
-  )) %>%
-  ungroup()
+# # There are a series of study-specific errors which have been inferred from the "immuneResponseCallGeneration.R" script in the ImmuneSignatures2 GitHub page.
+# # We fix these here.
+# # First, "SDY1276" is apparently scaled in log4.
+# 
+# response_raw_merged_studies = response_raw_merged_studies %>%
+#   mutate(value_preferred = if_else(
+#     study_accession == "SDY1276",
+#     4^value_preferred,
+#     value_preferred
+#   ))
+# 
+# # Next, "SDY1289" has some nAb baseline values at exactly 0, these are set to 1.
+# 
+# response_raw_merged_studies = response_raw_merged_studies %>%
+#   mutate(value_preferred = if_else(
+#     (
+#       study_accession == "SDY1289" &
+#         value_preferred == 0 &
+#         as.numeric(study_time_collected) == 0
+#     ) ,
+#     1,
+#     value_preferred
+#   ))
+# 
+# # "SDY1264" lacks baseline data. The investigators create this row, where the baseline value is set to 1 for everyone.
+# 
+# day_zero <- response_raw_merged_studies %>%
+#   filter(study_accession == "SDY1264") %>%        # pull out SDY1264
+#   distinct(participant_id, .keep_all = TRUE) %>%   # keep only one row per participant
+#   mutate(
+#     study_time_collected = 0,
+#     # reset time to “0”
+#     value_preferred      = 1                     # set preferred value to 1
+#   )
+# 
+# # Bind them back on to the full dataset
+# response_raw_merged_studies <- bind_rows(response_raw_merged_studies, day_zero)
+# 
+# # "SDY1328" has an incorrect time label. Apparently, the data which is claimed to be taken at day 7 should actually be at day 30.
+# 
+# response_raw_merged_studies = response_raw_merged_studies %>%
+#   mutate(study_time_collected = if_else(
+#     (study_accession == "SDY1328" &
+#        study_time_collected == 7) ,
+#     30,
+#     study_time_collected
+#   ))
+# 
+# # Additionally, this study has some anomalies at day 0, where data suggests these participants have antibody responses prior to vaccination.
+# # The investigators set baseline values as well as values of 2.5 to 1.
+# 
+# response_raw_merged_studies = response_raw_merged_studies %>%
+#   mutate(value_preferred = if_else((
+#     study_accession == "SDY1328" &
+#       (value_preferred == 2.5 | study_time_collected == 0)
+#   ), 1, value_preferred))
+# 
+# # Furthermore, apparently these values need to be transformed with log2. This also applies to SDY984.
+# 
+# response_raw_merged_studies = response_raw_merged_studies %>%
+#   mutate(value_preferred = if_else(((study_accession == "SDY1328" |
+#                                        study_accession == "SDY984") &
+#                                       assay == "elisa"
+#   ), log2(value_preferred), value_preferred))
+# 
+# # For "SDY1260", the values need to be de-transformed from log2.
+# 
+# response_raw_merged_studies = response_raw_merged_studies %>%
+#   mutate(value_preferred = if_else(
+#     (study_accession == "SDY1260" &
+#        assay == "elisa"),
+#     2^value_preferred,
+#     value_preferred
+#   ))
+# 
+# # Furthermore, the IgG serotype values need to be summed within each participant, timepoint, and vaccine.
+# 
+# response_raw_merged_studies <- response_raw_merged_studies %>%
+#   group_by(participant_id,
+#            study_time_collected,
+#            vaccine,
+#            vaccine_type,
+#            pathogen) %>%
+#   mutate(value_preferred = if_else(
+#     (study_accession == "SDY1260" & assay == "elisa"),
+#     # sum only the SDY1260 values within this group, then log2
+#     log2(sum(value_preferred[study_accession == "SDY1260"])),
+#     # otherwise leave unchanged
+#     value_preferred
+#   )) %>%
+#   ungroup()
 
 # We intend to predict on immune response data at day 28 (plus or minus 7 days), so we filter to get the immune data at these timepoints or pre-vaccination.
 
@@ -319,6 +340,19 @@ max_response_MFC_df_elisa = max_response_MFC_df_each %>%
   ) %>%
   select(-assay)
 
+max_response_MFC_df_elispot = max_response_MFC_df_each %>%
+  filter(assay == "elispot") %>%
+  rename(
+    immResp_MFC_elispot_response_strain_analyte = response_strain_analyte,
+    immResp_MFC_elispot_pre_time = response_MFC_pre_time,
+    immResp_MFC_elispot_post_time = response_MFC_post_time,
+    immResp_MFC_elispot_pre_value = response_MFC_pre_value,
+    immResp_MFC_elispot_post_value = response_MFC_post_value,
+    immResp_MFC_elispot_MFC = response_MFC,
+    immResp_MFC_elispot_log2_MFC = response_log2_MFC
+  ) %>%
+  select(-assay)
+
 max_response_MFC_df_hai = max_response_MFC_df_each %>%
   filter(assay == "hai") %>%
   rename(
@@ -337,6 +371,7 @@ hipc_immResp <- list(
   max_response_MFC_df_any,
   max_response_MFC_df_nAb,
   max_response_MFC_df_elisa,
+  max_response_MFC_df_elispot,
   max_response_MFC_df_hai
 ) %>%
   reduce(full_join, by = "participant_id") %>%
