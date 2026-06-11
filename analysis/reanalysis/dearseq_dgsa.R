@@ -387,7 +387,13 @@ run_comparison <- function(vax, day, hipc, BTM, gene_names) {
     filter(time_post_last_vax == day) %>%
     pull(immResp_MFC_anyAssay_log2_MFC)
   
-  test_res <- suppressMessages(capture.output(run_dgsa(exprmat, x, phi, subject_ids, BTM), type = "message"))
+  dgsa_result <- NULL
+  suppressMessages(
+    capture.output(
+      dgsa_result <- run_dgsa(exprmat, x, phi, subject_ids, BTM),
+      type = "message"
+    )
+  )
   
   score_res <- calculate_scores(
     y            = exprmat,
@@ -408,10 +414,10 @@ run_comparison <- function(vax, day, hipc, BTM, gene_names) {
     GSA      = BTM
   )
   
-  sig_pct <- 100 * mean(test_res$pvals$adjPval < 0.05)
+  sig_pct <- 100 * mean(dgsa_result$pvals$adjPval < 0.05)
   message(sprintf("  %.1f%% of gene sets significant (BH-adjusted p < 0.05)", sig_pct))
   
-  list(pvals = test_res$pvals, score = score_res, cor = cor_res)
+  list(pvals = dgsa_result$pvals, score = score_res, cor = cor_res)
 }
 
 # =============================================================================
