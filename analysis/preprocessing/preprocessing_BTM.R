@@ -14,11 +14,64 @@ raw_data_folder = "data-raw"
 
 # Use fs::path() to specify the data paths robustly
 p_load_BTM <- fs::path(raw_data_folder, "BTM_for_GSEA_20131008.gmt")
-# p_load_aggregates <- fs::path(raw_data_folder, "BTM_functional_groups.txt")
+p_load_aggregates <- fs::path(raw_data_folder, "BTM_functional_groups.txt")
 p_load_expression <- fs::path(raw_data_folder, "all_noNorm_eset.rds")
 
 # BTMs need to be loaded in with `GSA.read.gmt()` from the `GSA` package
 BTM = GSA.read.gmt(p_load_BTM)
+
+# Aggregates are a .txt file so need to be loaded with `read.delim()` from `readr` package
+BTM_functional_groups <-
+  read.delim(p_load_aggregates, comment.char = "#")
+
+# Now we preprocess the aggregate data
+
+# Put everything in lowercase
+BTM_functional_groups$SUBGROUP <-
+  str_to_title(tolower(BTM_functional_groups$SUBGROUP))
+
+# Manually replace specific terms to stay in uppercase (i.e. where uppercase represents an acronym)
+BTM_functional_groups$SUBGROUP <-
+  gsub("\\bEcm\\b", "ECM", BTM_functional_groups$SUBGROUP)
+BTM_functional_groups$SUBGROUP <-
+  gsub("\\bDc\\b", "DC", BTM_functional_groups$SUBGROUP)
+BTM_functional_groups$SUBGROUP <-
+  gsub("\\bTlr\\b", "TLR", BTM_functional_groups$SUBGROUP)
+BTM_functional_groups$SUBGROUP <-
+  gsub("\\bNk\\b", "NK", BTM_functional_groups$SUBGROUP)
+
+BTM[["geneset.aggregates"]] <-
+  BTM_functional_groups$SUBGROUP[match(tolower(BTM[["geneset.names"]]), tolower(BTM_functional_groups$NAME))]
+
+# Where a geneset does not have an aggregate, replace these empty mappings with NA
+BTM[["geneset.aggregates"]] <-
+  ifelse(is.na(BTM[["geneset.aggregates"]]) |
+           BTM[["geneset.aggregates"]] == "", "NA", BTM[["geneset.aggregates"]])
+
+# Define an ordering for consistent figures in downstream analysis
+## Roughly, this ordering is "innate immunity", "cellular processes", and "adaptive immunity"
+category_order <- c(
+  "Antigen Presentation",
+  "Inflammatory/TLR/Chemokines",
+  "Interferon/Antiviral Sensing",
+  "Monocytes",
+  "DC Activation",
+  "Neutrophils",
+  "NK Cells",
+  "Signal Transduction",
+  "ECM And Migration",
+  "Energy Metabolism",
+  "Cell Cycle",
+  "Platelets",
+  "T Cells",
+  "B Cells",
+  "Plasma Cells",
+  "NA"
+)
+
+# Assign aggregated categories as factors to genesets
+BTM[["geneset.aggregates"]] <-
+  factor(BTM[["geneset.aggregates"]], levels = category_order)
 
 # Expression data can be loaded with `readRDS()`
 all_noNorm_eset <- readRDS(p_load_expression)
@@ -60,6 +113,9 @@ BTM[["geneset.names"]] <- BTM[["geneset.names"]][gs_membership]
 BTM[["geneset.descriptions"]] <-
   BTM[["geneset.descriptions"]][gs_membership]
 
+BTM[["geneset.aggregates"]] <-
+  BTM[["geneset.aggregates"]][gs_membership]
+
 # Rename the column names.descriptions to names
 BTM[["geneset.names.descriptions"]] = BTM[["geneset.names"]]
 
@@ -84,6 +140,7 @@ BTM[["geneset.names.descriptions"]] <- BTM[["geneset.names.descriptions"]][btm_f
 BTM[["geneset.names"]] <- BTM[["geneset.names"]][btm_filter]
 BTM[["geneset.descriptions"]] <- BTM[["geneset.descriptions"]][btm_filter]
 BTM[["genesets"]] <- BTM[["genesets"]][btm_filter]
+BTM[["geneset.aggregates"]] <- BTM[["geneset.aggregates"]][btm_filter]
 
 # Save the processed geneset object
 
