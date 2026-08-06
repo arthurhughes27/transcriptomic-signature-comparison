@@ -47,12 +47,18 @@ extract_dgsa_results <- function(results_list) {
 #'
 #' @keywords internal
 apply_pvalue_adjustment_method <- function(df, method) {
+  # Use .env$method (not bare `method`) inside the mutate() calls below:
+  # build_tidy_dgsa_results()'s output has a *column* literally named
+  # "method" (the "dearseq"/"qusage" label), which would otherwise shadow
+  # this function's `method` parameter in dplyr's data mask, passing the
+  # whole "method" column instead of the scalar adjustment-method name to
+  # p.adjust() (and tripping match.arg()'s length check inside it).
   df |>
-    dplyr::mutate(!!paste0("global.adjPval_", method) := stats::p.adjust(rawPval, method = method)) |>
+    dplyr::mutate(!!paste0("global.adjPval_", method) := stats::p.adjust(rawPval, method = .env$method)) |>
     dplyr::group_by(time) |>
-    dplyr::mutate(!!paste0("withinTime.adjPval_", method) := stats::p.adjust(rawPval, method = method)) |>
+    dplyr::mutate(!!paste0("withinTime.adjPval_", method) := stats::p.adjust(rawPval, method = .env$method)) |>
     dplyr::group_by(comparison) |>
-    dplyr::mutate(!!paste0("withinComparison.adjPval_", method) := stats::p.adjust(rawPval, method = method)) |>
+    dplyr::mutate(!!paste0("withinComparison.adjPval_", method) := stats::p.adjust(rawPval, method = .env$method)) |>
     dplyr::ungroup()
 }
 

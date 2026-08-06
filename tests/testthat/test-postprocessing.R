@@ -48,6 +48,24 @@ test_that("apply_pvalue_adjustments() produces correct adjusted p-values for eve
   expect_equal(out$withinComparison.adjPval_bonferroni, expected_within_comparison)
 })
 
+test_that("apply_pvalue_adjustments() is not confused by a 'method' column in df", {
+  # build_tidy_dgsa_results() always produces a `method` column (the
+  # "dearseq"/"qusage" label). Regression test for a data-masking bug where
+  # the bare `method` symbol inside mutate() resolved to that *column*
+  # instead of apply_pvalue_adjustment_method()'s `method` parameter.
+  df <- tibble::tibble(
+    comparison = c("V1 - Day 1", "V1 - Day 1"),
+    time       = c(1, 1),
+    rawPval    = c(0.01, 0.2),
+    method     = c("dearseq", "dearseq")
+  )
+
+  out <- apply_pvalue_adjustments(df, methods = c("BH", "holm"))
+
+  expect_equal(out$global.adjPval_BH, stats::p.adjust(df$rawPval, method = "BH"))
+  expect_equal(out$global.adjPval_holm, stats::p.adjust(df$rawPval, method = "holm"))
+})
+
 test_that("build_tidy_dgsa_results() tidies a results list, dropping NULL comparisons", {
   genesets <- list(
     geneset.names       = c("gs1", "gs2", "gs3"),
