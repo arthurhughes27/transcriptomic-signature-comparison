@@ -294,7 +294,7 @@ calculate_gs_correlation = function(y, response, GSA) {
 # any linearly dependent columns and the vaccine_code columns themselves,
 # leaving only the adjustment covariates for dearseq.
 build_covariate_matrix <- function(df) {
-  X_full  <- model.matrix(~ vaccine_code + age_imputed + gender + study_accession,
+  X_full  <- model.matrix(~ vaccine_code + age_imputed + gender + study_accession + race,
                           data = df)
   qrX     <- qr(X_full)
   X_indep <- X_full[, sort(qrX$pivot[seq_len(qrX$rank)]), drop = FALSE]
