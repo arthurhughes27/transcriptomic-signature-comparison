@@ -114,6 +114,16 @@ The `analysis/reanalysis/` driver scripts are all thin: they load data, source `
 
 Both `dearseq_dgsa_results_processed.rds` and the QuSAGE equivalent share a common schema so they can be row-bound for comparison: `comparison`, `condition` (vaccine), `time` (day post-vax), `condition.colour`, `gs.name`, `gs.description`, `gs.name.description`, `gs.aggregate`, `gs.colour`, `activation.score`, `fc.score`, `mean.corr`, `corr.mean`, `rawPval`, `method` (`"dearseq"` / `"qusage"`), plus `{scope}.adjPval_{correction}` columns for every scope x correction combination.
 
+### 4. Specification analysis (`analysis/specification_analysis/`)
+
+Chapter 2, Section 2.2.4's robustness/specification analysis: evaluates the 35,640-specification grid from Table 2.1 (see `R/specifications.R` above) and computes the robustness metric pi_{g,v,j} for every gene set x vaccine x timepoint comparison, without ever running DGSA 35,640 times or materialising a table of that size (see `R/robustness_metrics.R` above for how). Three numbered driver scripts, run in order:
+
+- **`01_build_specification_grid.R`** — builds and saves the raw (66) and post-hoc (540) specification grids to `output/results/specification_analysis/`.
+- **`02_run_raw_specifications.R`** — **the expensive step.** Runs each of the 66 raw specifications across every valid comparison (dearseq's permutation test in particular is not cheap), checkpointing each specification's results to its own file (`output/results/specification_analysis/raw/{spec_label}.rds`); an interrupted run resumes rather than restarts, both across specifications and within one. Has a `SMOKE_TEST` switch at the top to restrict to a handful of comparisons first, to confirm the whole pipeline runs end-to-end before committing a laptop to the full run.
+- **`03_apply_posthoc_and_robustness.R`** — tidies and p-value-adjusts each raw specification's results (`R/postprocessing.R`) and folds them into the robustness-metric accumulator (`R/robustness_metrics.R`), checkpointed by which raw specifications have been accumulated so far (`output/results/specification_analysis/robustness_accumulator_state.rds`). Safe to re-run at any point, including while `02` is still producing more results — saves `output/results/specification_analysis/robustness_metrics.rds`, warning if the result is still partial.
+
+A fourth script producing the **specification heatmap** (the visualisation summary tool introduced alongside the robustness metric) is intentionally not yet built — its design hasn't been finalised.
+
 ## Running the pipeline
 
 ```r
