@@ -2,13 +2,15 @@
 # Specification analysis — 02: run raw specifications
 # =============================================================================
 # Runs each of the 66 raw specifications (output of 01_build_specification_
-# grid.R) across every vaccine x timepoint comparison, using
-# run_dearseq_comparison() / run_qusage_comparison(). Each specification's
-# results are checkpointed to their own file
-# (output/results/specification_analysis/raw/{spec_label}.rds), and
-# comparisons already present in that file are skipped - so an interrupted
-# run resumes rather than restarts, both across specifications and within
-# one (matching the pattern used by dearseq_dgsa.R / qusage_dgsa.R).
+# grid.R) across every vaccine x DAYS_TO_ANALYSE timepoint comparison (days
+# 1, 3, and 7 by default - edit DAYS_TO_ANALYSE below, or set it to NULL for
+# every timepoint present in the data), using run_dearseq_comparison() /
+# run_qusage_comparison(). Each specification's results are checkpointed to
+# their own file (output/results/specification_analysis/raw/{spec_label}.rds),
+# and comparisons already present in that file are skipped - so an
+# interrupted run resumes rather than restarts, both across specifications
+# and within one (matching the pattern used by dearseq_dgsa.R /
+# qusage_dgsa.R).
 #
 # THIS IS THE EXPENSIVE STEP: 66 specifications x every valid comparison,
 # many involving dearseq's permutation test (1000 permutations for small
@@ -32,6 +34,12 @@ library(dearseq)
 library(qusage)
 
 source(fs::path("R", "load_all.R"))
+
+# ── Timepoints to analyse ────────────────────────────────────────────────────
+# Restrict to a subset of post-vaccination days for faster runs. Set to NULL
+# to include every timepoint present in the data.
+
+DAYS_TO_ANALYSE <- c(1, 3, 7)
 
 # ── Smoke-test switch ────────────────────────────────────────────────────────
 
@@ -64,7 +72,7 @@ hipc <- hipc %>%
 
 raw_grid <- readRDS(fs::path(out_dir, "raw_specification_grid.rds"))
 
-comparisons <- list_valid_comparisons(hipc)
+comparisons <- list_valid_comparisons(hipc, days = DAYS_TO_ANALYSE)
 if (SMOKE_TEST) {
   comparisons <- comparisons %>% slice_head(n = SMOKE_TEST_N_COMPARISONS)
   message("SMOKE_TEST = TRUE: restricting to ", nrow(comparisons), " comparison(s).")

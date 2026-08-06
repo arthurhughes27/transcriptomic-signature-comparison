@@ -14,6 +14,28 @@ test_that("list_valid_comparisons() finds vaccine x timepoint pairs with paired 
   expect_setequal(paste(out$vaccine_name, out$day), c("V1 7", "V2 3"))
 })
 
+test_that("list_valid_comparisons() restricts to the requested days", {
+  hipc <- tibble::tibble(
+    vaccine_name       = c("V1", "V1", "V1", "V1", "V2", "V2"),
+    participant_id     = c("p1", "p1", "p1", "p1", "p2", "p2"),
+    time_post_last_vax = c(-1,   1,    3,    7,    -1,   3)
+  )
+  # V1: valid at days 1, 3, and 7; V2: valid at day 3 only
+
+  out_all <- list_valid_comparisons(hipc)
+  expect_equal(nrow(out_all), 4)
+
+  out_restricted <- list_valid_comparisons(hipc, days = c(1, 3, 7))
+  expect_setequal(paste(out_restricted$vaccine_name, out_restricted$day), c("V1 1", "V1 3", "V1 7", "V2 3"))
+
+  out_narrower <- list_valid_comparisons(hipc, days = c(1, 7))
+  expect_setequal(paste(out_narrower$vaccine_name, out_narrower$day), c("V1 1", "V1 7"))
+
+  # a day absent from the data is silently ignored, not an error
+  out_missing_day <- list_valid_comparisons(hipc, days = c(1, 99))
+  expect_setequal(paste(out_missing_day$vaccine_name, out_missing_day$day), c("V1 1"))
+})
+
 test_that("filter_paired_samples() keeps only the most recent pre-vaccination sample", {
   hipc <- tibble::tibble(
     vaccine_name          = c("V1",  "V1", "V1", "V1"),

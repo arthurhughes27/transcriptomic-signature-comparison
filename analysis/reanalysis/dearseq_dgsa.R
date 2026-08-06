@@ -4,9 +4,11 @@
 # Thin driver: runs the baseline dearseq specification (covariates = age,
 # sex, study, race; mean-variance weights = local linear regression at the
 # observation level - the bolded options in Table 2.1) across every vaccine
-# x timepoint comparison, comparing post-vaccination samples against
-# self-controls (pre-vaccination baseline). All the actual logic lives in
-# R/dgsa_common.R and R/dgsa_dearseq.R.
+# x DAYS_TO_ANALYSE timepoint comparison (days 1, 3, and 7 by default - edit
+# DAYS_TO_ANALYSE below, or set it to NULL for every timepoint present in
+# the data), comparing post-vaccination samples against self-controls
+# (pre-vaccination baseline). All the actual logic lives in R/dgsa_common.R
+# and R/dgsa_dearseq.R.
 # Results are saved incrementally to guard against mid-run crashes.
 # =============================================================================
 
@@ -17,6 +19,12 @@ library(tidyverse)
 library(dearseq)
 
 source(fs::path("R", "load_all.R"))
+
+# ── Timepoints to analyse ────────────────────────────────────────────────────
+# Restrict to a subset of post-vaccination days for faster runs. Set to NULL
+# to include every timepoint present in the data.
+
+DAYS_TO_ANALYSE <- c(1, 3, 7)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -45,7 +53,7 @@ hipc <- hipc %>%
 # Load any previously saved results so a restart continues rather than reruns
 results_list <- if (file_exists(p_results)) readRDS(p_results) else list()
 
-comparisons <- list_valid_comparisons(hipc)
+comparisons <- list_valid_comparisons(hipc, days = DAYS_TO_ANALYSE)
 
 for (i in seq_len(nrow(comparisons))) {
 
