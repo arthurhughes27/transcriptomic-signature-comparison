@@ -244,93 +244,81 @@ print(p_age)
 gender_levels  <- c("Male", "Female", "Unknown")
 gender_colours <- c(Male = "#4E79A7", Female = "#F28E2B", Unknown = "#B0B0B0")
 
-gender_data <- hipc_merged_all_norm %>%
-  mutate(
-    gender = factor(
-      if_else(gender %in% gender_levels, gender, "Unknown"),
-      levels = gender_levels
-    ),
-    study_accession_unique = factor(study_accession_unique, levels = study_order)
-  ) %>%
-  group_by(study_accession_unique, gender) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  group_by(study_accession_unique) %>%
-  mutate(pct = n / sum(n) * 100) %>%
-  ungroup()
-
-p_gender <- ggplot(gender_data,
-             aes(x = study_accession_unique, y = pct, fill = gender)) +
-  geom_col(colour = "black", linewidth = 0.3, width = 0.7) +
-  scale_fill_manual(
-    name   = "Gender",
-    values = gender_colours,
-    guide  = guide_legend(override.aes = list(colour = "black", linewidth = 0.3))
-  ) +
-  vaccine_legend_layer(study_colours_df) +
-  scale_x_discrete(drop = FALSE) +
-  scale_y_continuous(
-    labels = function(x) paste0(x, "%"),
-    limits = c(0, 100), expand = c(0, 0)
-  ) +
-  labs(
-    x     = "Study identifier",
-    y     = "Percentage of participants",
-    title = "Gender distribution per study"
-  ) +
-  base_theme(axis_colours[levels(gender_data$study_accession_unique)])
-
-print(p_gender)
-
 # ── Race (categorical -> stacked bar) ────────────────────────────────────────
 
 race_levels <- c(
   "American Indian or Alaska Native", "Asian",
   "Black or African American", "White", "Other", "Unknown"
 )
+# Deliberately disjoint from gender_colours (no shared hues, including for
+# "Unknown") so the Gender and Race legends/panels remain visually distinct
+# when shown together in the combined demographics figure.
 race_colours <- c(
-  "American Indian or Alaska Native" = "#59A14F",
-  "Asian"                            = "#F28E2B",
-  "Black or African American"        = "#E15759",
-  "White"                            = "#4E79A7",
-  "Other"                            = "#B07AA1",
-  "Unknown"                          = "#B0B0B0"
+  "American Indian or Alaska Native" = "#1B9E77",
+  "Asian"                            = "#7570B3",
+  "Black or African American"        = "#E7298A",
+  "White"                            = "#66A61E",
+  "Other"                            = "#E6AB02",
+  "Unknown"                          = "#A6761D"
 )
 
-race_data <- hipc_merged_all_norm %>%
-  mutate(
-    race = factor(
-      if_else(race %in% race_levels, race, "Unknown"),
-      levels = race_levels
-    ),
-    study_accession_unique = factor(study_accession_unique, levels = study_order)
-  ) %>%
-  group_by(study_accession_unique, race) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  group_by(study_accession_unique) %>%
-  mutate(pct = n / sum(n) * 100) %>%
-  ungroup()
+# Builds a stacked-bar panel of percentage composition per study for a single
+# categorical covariate (e.g. gender or race). When `vaccine_legend` is TRUE,
+# an additional (invisible) vaccine fill scale is layered on via ggnewscale so
+# the plot carries its own vaccine legend when used standalone; this is left
+# FALSE for panels destined for the combined figure below, where the vaccine
+# legend is shown once (from the age panel) instead of once per panel, and
+# keeping a single fill scale per plot makes legend extraction unambiguous.
+make_categorical_panel <- function(fill_col, factor_levels, colours, legend_title,
+                                   plot_title, vaccine_legend = TRUE) {
 
-p_race <- ggplot(race_data,
-             aes(x = study_accession_unique, y = pct, fill = race)) +
-  geom_col(colour = "black", linewidth = 0.3, width = 0.7) +
-  scale_fill_manual(
-    name   = "Race",
-    values = race_colours,
-    guide  = guide_legend(override.aes = list(colour = "black", linewidth = 0.3))
-  ) +
-  vaccine_legend_layer(study_colours_df) +
-  scale_x_discrete(drop = FALSE) +
-  scale_y_continuous(
-    labels = function(x) paste0(x, "%"),
-    limits = c(0, 100), expand = c(0, 0)
-  ) +
-  labs(
-    x     = "Study identifier",
-    y     = "Percentage of participants",
-    title = "Race distribution per study"
-  ) +
-  base_theme(axis_colours[levels(race_data$study_accession_unique)])
+  plot_data <- hipc_merged_all_norm %>%
+    mutate(
+      !!fill_col := factor(
+        if_else(.data[[fill_col]] %in% factor_levels, .data[[fill_col]], "Unknown"),
+        levels = factor_levels
+      ),
+      study_accession_unique = factor(study_accession_unique, levels = study_order)
+    ) %>%
+    group_by(study_accession_unique, .data[[fill_col]]) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(study_accession_unique) %>%
+    mutate(pct = n / sum(n) * 100) %>%
+    ungroup()
 
+  p <- ggplot(plot_data,
+              aes(x = study_accession_unique, y = pct, fill = .data[[fill_col]])) +
+    geom_col(colour = "black", linewidth = 0.3, width = 0.7) +
+    scale_fill_manual(
+      name   = legend_title,
+      values = colours,
+      guide  = guide_legend(override.aes = list(colour = "black", linewidth = 0.3))
+    )
+
+  if (vaccine_legend) p <- p + vaccine_legend_layer(study_colours_df)
+
+  p +
+    scale_x_discrete(drop = FALSE) +
+    scale_y_continuous(
+      labels = function(x) paste0(x, "%"),
+      limits = c(0, 100), expand = c(0, 0)
+    ) +
+    labs(
+      x     = "Study identifier",
+      y     = "Percentage of participants",
+      title = plot_title
+    ) +
+    base_theme(axis_colours[levels(plot_data$study_accession_unique)])
+}
+
+p_gender <- make_categorical_panel(
+  "gender", gender_levels, gender_colours, "Gender", "Gender distribution per study"
+)
+p_race <- make_categorical_panel(
+  "race", race_levels, race_colours, "Race", "Race distribution per study"
+)
+
+print(p_gender)
 print(p_race)
 
 # Save individual demographic plots
@@ -344,6 +332,24 @@ purrr::walk2(
 # =============================================================================
 # COMBINED DEMOGRAPHICS FIGURE (age / gender / race stacked)
 # =============================================================================
+# Each panel below carries exactly one fill scale (age: vaccine; gender:
+# gender; race: race), so legends can be extracted unambiguously with
+# cowplot::get_legend() and each shown exactly once in the shared legend
+# column, rather than the previous approach of layering a second "Vaccine"
+# fill scale onto every panel via ggnewscale, which made get_legend()/guides()
+# extraction ambiguous and produced garbled combined legends.
+
+# Bare gender/race panels for the combined figure only: single fill scale,
+# no vaccine legend layer (the age panel's vaccine legend already covers this,
+# since all three panels share the same vaccine-coloured x-axis text).
+p_gender_combined <- make_categorical_panel(
+  "gender", gender_levels, gender_colours, "Gender", "Gender distribution per study",
+  vaccine_legend = FALSE
+)
+p_race_combined <- make_categorical_panel(
+  "race", race_levels, race_colours, "Race", "Race distribution per study",
+  vaccine_legend = FALSE
+)
 
 # Strip legends and x-axis labels from the upper two panels
 strip_x <- theme(
@@ -353,35 +359,22 @@ strip_x <- theme(
   legend.position = "none"
 )
 
-p_age_bare    <- p_age    + strip_x
-p_gender_bare <- p_gender + strip_x
-p_race_bare   <- p_race   + theme(legend.position = "none")
+legend_theme <- theme(
+  legend.position       = "right",
+  legend.title          = element_text(size = 20, hjust = 0.5),
+  legend.text           = element_text(size = 14),
+  legend.key.spacing.y  = unit(0.3, "cm")
+)
 
-# Extract legends separately for the legend column
-legend_vaccine <- get_legend(
-  p_age + theme(legend.position = "right",
-             legend.title = element_text(size = 20, hjust = 0.5),
-             legend.text  = element_text(size = 14),
-             legend.key.spacing.y = unit(0.3, "cm"))
-)
-legend_gender <- get_legend(
-  p_gender +
-    guides(fill = guide_legend(title = "Gender",
-                               override.aes = list(colour = "black", linewidth = 0.3))) +
-    theme(legend.position = "right",
-          legend.title = element_text(size = 20, hjust = 0.5),
-          legend.text  = element_text(size = 14),
-          legend.key.spacing.y = unit(0.3, "cm"))
-)
-legend_race <- get_legend(
-  p_race +
-    guides(fill = guide_legend(title = "Race",
-                               override.aes = list(colour = "black", linewidth = 0.3))) +
-    theme(legend.position = "right",
-          legend.title = element_text(size = 20, hjust = 0.5),
-          legend.text  = element_text(size = 14),
-          legend.key.spacing.y = unit(0.3, "cm"))
-)
+p_age_bare    <- p_age             + strip_x
+p_gender_bare <- p_gender_combined + strip_x
+p_race_bare   <- p_race_combined   + theme(legend.position = "none")
+
+# Extract legends separately for the legend column (each source plot has a
+# single fill scale, so each call unambiguously grabs the intended legend)
+legend_vaccine <- get_legend(p_age             + legend_theme)
+legend_gender  <- get_legend(p_gender_combined + legend_theme)
+legend_race    <- get_legend(p_race_combined   + legend_theme)
 
 legend_col <- plot_grid(
   legend_vaccine, legend_gender, legend_race,
