@@ -71,7 +71,7 @@ apply_pvalue_adjustment_method <- function(df, method) {
 #' @return `df` with `3 * length(methods)` additional columns.
 apply_pvalue_adjustments <- function(df,
                                      methods = c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY")) {
-  Reduce(apply_pvalue_adjustment_method, methods, .init = df)
+  Reduce(apply_pvalue_adjustment_method, methods, init = df)
 }
 
 #' Tidy a raw DGSA results list into a long-format results table
