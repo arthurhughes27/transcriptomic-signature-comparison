@@ -26,7 +26,8 @@ analysis/
 │   └── preprocessing_merging.R           # Merges clinical + immune response + expression into analysis-ready tables
 ├── descriptive/
 │   ├── descriptive_master.R              # Runs descriptive analyses
-│   └── hipc_descriptive_figures.R        # Cohort/sample-size overview figures (bubble plots etc.)
+│   ├── is2_bubble_plot.R                 # Main-text figure: study x timepoint sample bubble plot
+│   └── is2_appendix_descriptives.R       # Appendix: covariate distributions + study-level sample size table
 └── reanalysis/
     ├── reanalysis_master.R               # Runs the dearseq DGSA pipeline end-to-end
     ├── dearseq_dgsa.R                    # Per-vaccine x timepoint DGSA using dearseq (vs. pre-vax baseline)
@@ -65,7 +66,10 @@ Key preprocessing decisions: "Unknown"/"Not Specified" gender & race are collaps
 
 ### 2. Descriptive analysis (`analysis/descriptive/`)
 
-Generates cohort-overview figures (e.g. sample counts per study/vaccine over time) from `hipc_merged_all_norm.rds`, coloured consistently using the `vaccine_colour`/`study_colour` palettes defined during preprocessing.
+Generates the dataset-description material for the thesis chapter, from `hipc_merged_all_norm.rds`, coloured consistently using the `vaccine_colour`/`study_colour` palettes defined during preprocessing:
+
+- **`is2_bubble_plot.R`** — the main-text figure: a bubble plot with studies on the y-axis (coloured by vaccine), days post-vaccination on the x-axis, and bubble size proportional to the number of transcriptomic samples available per study x timepoint.
+- **`is2_appendix_descriptives.R`** — Appendix A material: per-study covariate distributions (age, gender, race, immune-response assay availability and pre/post-vaccination distributions for nAb/HAI/ELISA) and a study-level sample-size summary table (participants, samples, timepoints sampled), saved to `output/tables/descriptive/` as both CSV and a `\input{}`-ready LaTeX table.
 
 ### 3. Reanalysis / DGSA (`analysis/reanalysis/`)
 
