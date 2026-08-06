@@ -14,6 +14,15 @@ The analysis works at the level of curated **gene sets** (Blood Transcriptional 
 ## Repository structure
 
 ```
+R/                                          # Modular, reusable analysis functions (sourced, not a package)
+├── load_all.R                              # source(fs::path("R", "load_all.R")) loads every function below
+├── dgsa_common.R                           # Shared DGSA helpers: comparison listing, sample pairing, covariate matrices, gene-set correlation
+├── dgsa_dearseq.R                          # Modular dearseq DGSA: run_dearseq_comparison() for one vaccine x timepoint comparison
+└── synthetic_data.R                        # make_synthetic_is2_data(): small synthetic dataset for testing without real data
+
+tests/                                      # testthat suite for R/ (run via `Rscript tests/run_tests.R`)
+└── testthat/
+
 analysis/
 ├── analysis_master.R                     # Top-level entry point: runs preprocessing (then reanalysis/descriptive)
 ├── preprocessing/
@@ -30,7 +39,7 @@ analysis/
 │   └── is2_appendix_descriptives.R       # Appendix: covariate distributions + study-level sample size table
 └── reanalysis/
     ├── reanalysis_master.R               # Runs the dearseq DGSA pipeline end-to-end
-    ├── dearseq_dgsa.R                    # Per-vaccine x timepoint DGSA using dearseq (vs. pre-vax baseline)
+    ├── dearseq_dgsa.R                    # Thin driver: baseline dearseq specification, via R/dgsa_common.R + R/dgsa_dearseq.R
     ├── process_dearseq_dgsa_results.R    # Tidies dearseq results, assigns colours, applies 6 p-value correction methods x 3 scopes
     ├── qusage_dgsa.R                     # Parallel DGSA/meta-analysis pipeline using QuSAGE (based on Hagan et al. 2022)
     ├── dgsa_comparison_example.R         # Example comparison of dearseq vs QuSAGE under fixed hyperparameters
@@ -71,9 +80,17 @@ Generates the dataset-description material for the thesis chapter, from `hipc_me
 - **`is2_bubble_plot.R`** — the main-text figure: a bubble plot with studies on the y-axis (coloured by vaccine), days post-vaccination on the x-axis, and bubble size proportional to the number of transcriptomic samples available per study x timepoint.
 - **`is2_appendix_descriptives.R`** — Appendix A material: per-study covariate distributions (age, gender, race, immune-response assay availability and pre/post-vaccination distributions for nAb/HAI/ELISA) and a study-level sample-size summary table (participants, samples, timepoints sampled), saved to `output/tables/descriptive/` as both CSV and a `\input{}`-ready LaTeX table.
 
-### 3. Reanalysis / DGSA (`analysis/reanalysis/`)
+### 3. Reanalysis / DGSA (`analysis/reanalysis/`, `R/`)
 
-Core biomarker-discovery and robustness analysis. Two independent differential gene-set analysis (DGSA) methods are run over the **same** vaccine x timepoint comparisons (post-vaccination vs. pre-vaccination self-baseline, adjusting for age, sex, and study):
+Core biomarker-discovery and robustness analysis. Two independent differential gene-set analysis (DGSA) methods are run over the **same** vaccine x timepoint comparisons (post-vaccination vs. pre-vaccination self-baseline, adjusting for age, sex, and study).
+
+To keep this tractable across many analytical specifications (Chapter 2's robustness/specification analysis), the actual DGSA logic lives in modular, reusable functions under `R/` rather than in the `analysis/` driver scripts:
+
+- `R/dgsa_common.R` — shared building blocks used by every DGSA method: `list_valid_comparisons()` (which vaccine x timepoint pairs have usable data), `filter_paired_samples()` (pre-/post-vaccination sample pairing per participant), `build_covariate_matrix()` (design matrix for an arbitrary covariate subset, with automatic collinearity removal), and `calculate_gs_correlation()` (gene-set-level correlation with immune response).
+- `R/dgsa_dearseq.R` — `run_dearseq_comparison(vax, day, hipc, BTM, gene_names, covariates, which_weights, gene_based_weights)`: runs one comparison with `dearseq::dgsa_seq()`, parameterised by the dearseq-specific hyperparameters from Table 2.1 (covariate set; mean-variance weighting method/level), plus gene-set scoring (`calculate_scores()`).
+- `R/synthetic_data.R` — `make_synthetic_is2_data()`, a small synthetic dataset generator matching the `hipc_merged_*.rds`/`BTM_processed.rds` schema, used by the `tests/` suite (and available for local smoke-testing) without needing access to the real, private IS2 data.
+
+`analysis/reanalysis/dearseq_dgsa.R` is a thin driver: it loads the data, sources `R/load_all.R`, and loops `run_dearseq_comparison()` over every valid comparison at the baseline specification (bolded options in Table 2.1), checkpointing results incrementally. A QuSAGE equivalent (`run_qusage_comparison()`) and the specification-grid runners are planned as later additions to `R/`.
 
 - **`dearseq_dgsa.R`** — uses the `dearseq::dgsa_seq()` variance-component test (permutation test for small samples, asymptotic for large), with custom helper functions to compute per-gene-set activation/fold-change scores and gene-set-level Spearman correlations with immune response (MFC). Loops over every vaccine x timepoint combination, saving incrementally to `output/results/reanalysis/dearseq_dgsa_results_list.rds`.
 - **`process_dearseq_dgsa_results.R`** — reshapes the raw list into one tidy dataframe (`output/results/reanalysis/dearseq_dgsa_results_processed.rds`), one row per gene set x comparison, and appends p-value corrections for **6 methods** (`holm`, `hochberg`, `hommel`, `bonferroni`, `BH`, `BY`) applied at **3 scopes** (`global`, `withinTime`, `withinComparison`) — this multiplicity is itself part of the robustness assessment.
