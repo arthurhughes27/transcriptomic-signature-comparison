@@ -394,12 +394,7 @@ panels <- plot_grid(
 
 p_demographics_combined <- ggdraw(
   plot_grid(panels, legend_col, ncol = 2, rel_widths = c(4, 1))
-) +
-  draw_label(
-    "Participant demographics per study",
-    x = 0.5, y = 0.995, vjust = 1, hjust = 0.5,
-    fontface = "bold", size = 35
-  )
+) 
 
 print(p_demographics_combined)
 
@@ -407,7 +402,7 @@ ggsave(
   filename = "study_demographics_combined.pdf",
   path     = descriptive_figures_folder,
   plot     = p_demographics_combined,
-  width    = 45, height = 55, units = "cm"
+  width    = 45, height = 60, units = "cm"
 )
 
 # =============================================================================
