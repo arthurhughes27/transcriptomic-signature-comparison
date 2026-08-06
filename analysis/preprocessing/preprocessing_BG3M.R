@@ -12,13 +12,30 @@ library(readxl)
 # Specify folder within folder root where the raw data lives
 raw_data_folder = "data-raw"
 
+# Specify folder within folder root where the processed data lives
+processed_data_folder = "data"
+
 # Use fs::path() to specify the data paths robustly
 p_load_BG3M_raw <- fs::path(raw_data_folder, "Suppl_File_1_BIOINF.xls")
-p_load_expression <- fs::path(raw_data_folder, "all_noNorm_eset.rds")
+# Use the already-processed young_noNorm_expr (the analysis-ready expression
+# data feeding hipc_merged_young_noNorm.rds), not the raw all_noNorm_eset, so
+# genesets are filtered against the exact set of genes surviving
+# preprocessing_expression.R's per-study NA filtering. Filtering against the
+# raw, unfiltered gene list let genesets with zero genes actually present in
+# the analysis data slip through, silently producing NA p-values in
+# downstream DGSA. Requires preprocessing_expression.R to have already run
+# (as it does in preprocessing_master.R's ordering).
+p_load_expression <- fs::path(processed_data_folder, "young_noNorm_expr.rds")
 
 # Load data
 BG3M_raw = read_excel(p_load_BG3M_raw)
-all_noNorm_eset <- readRDS(p_load_expression)
+if (!fs::file_exists(p_load_expression)) {
+  stop(
+    "Processed expression data not found at ", p_load_expression, ".\n",
+    "Run preprocessing_expression.R first (preprocessing_master.R already does this in the right order)."
+  )
+}
+young_noNorm_expr <- readRDS(p_load_expression)
 
 # First we must preprocess the BG3M_raw raw data into a .gmt format
 
@@ -35,11 +52,12 @@ BG3M <- list(
   geneset.descriptions = BG3M_raw$`Module title`
 )
 
-# First take the expression data
-expr_data = all_noNorm_eset@assayData[["exprs"]]
-
-# Now extract the gene names from the expression matrix - we are only interested in keeping these
-gene_names = rownames(expr_data) %>%
+# Gene names are every young_noNorm_expr column other than the two leading
+# identifier columns; already lowercase (see preprocessing_expression.R),
+# but re-applied here for robustness
+gene_names = young_noNorm_expr %>%
+  select(-participant_id, -study_time_collected) %>%
+  colnames() %>%
   tolower()
 
 # Now in the geneset data - make the geneset names lowercase
@@ -88,9 +106,6 @@ BG3M[["geneset.aggregates"]] <- BG3M[["geneset.aggregates"]][BG3M_filter]
 BG3M[["genesets"]] <- BG3M[["genesets"]][BG3M_filter]
 
 # Save the processed geneset object
-
-# Specify folder within folder root where the processed data lives
-processed_data_folder = "data"
 
 # Use fs::path() to specify the data path robustly
 p_save <- fs::path(processed_data_folder, "BG3M_processed.rds")
