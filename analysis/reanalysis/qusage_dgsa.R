@@ -1530,6 +1530,6 @@ results_df_qusage$time = results_df_qusage$time %>%
 
 results_df_qusage$method = "qusage"
 
-dgsa_results_directory = "./output/results/qusage/"
+dgsa_results_directory = fs::path("output", "results", "reanalysis")
 
 saveRDS(results_df_qusage, file = paste0(dgsa_results_directory, "qusage_dgsa_results_processed.rds"))

@@ -32,11 +32,11 @@ source(fs::path("R", "load_all.R"))
 # ── Choose a comparison to validate ─────────────────────────────────────────
 
 VAX <- "Yellow Fever (LV)"
-DAY <- 7
+DAY <- 1
 
 # ── Old implementation: read from its cached, processed output ─────────────
 
-p_old_results <- fs::path("output", "results", "qusage", "qusage_dgsa_results_processed.rds")
+p_old_results <- fs::path("output", "results", "reanalysis", "qusage_dgsa_results_processed.rds")
 
 if (!fs::file_exists(p_old_results)) {
   stop(
