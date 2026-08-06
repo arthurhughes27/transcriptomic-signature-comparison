@@ -8,43 +8,36 @@
 # same contract as run_dearseq_comparison() (R/dgsa_dearseq.R), so both
 # methods can be driven by the same comparison loop and specification grid.
 #
-# Design notes / deliberate deviations from the original script:
+# By design, this deliberately REPRODUCES the original script's behaviour
+# rather than improving on it - the goal is a faithful, modular
+# reimplementation of Hagan et al.'s approach, not a methodologically
+# "corrected" one:
 #
-#   - Sample pairing defaults to the shared filter_paired_samples() helper
-#     (R/dgsa_common.R) - the same one dearseq uses - rather than the
-#     original script's separate keep_most_recent_prevax_time_point()
-#     applied globally across the whole dataset. This guarantees both
-#     methods analyse literally the same set of samples for a given
-#     comparison, as intended by Chapter 2, Section 2.2.2.
+#   - Sample pairing defaults (sample_scope = "study") to
+#     filter_study_baseline_samples() below, which reproduces the original
+#     script's per-comparison eset construction (qusage_dgsa.R lines
+#     ~971-979) exactly: every participant's most recent baseline sample is
+#     kept, together with every day = `day` post-vaccination sample for the
+#     given vaccine, regardless of whether a given participant has both.
+#     Since the original script's keep_most_recent_prevax_time_point(
+#     drop_postvax = FALSE) retains every participant's baseline plus *all*
+#     their post-vaccination samples (any day), a study with participants
+#     spread across several post-vaccination days pools every one of those
+#     participants' baselines into *every* day's comparison for that study -
+#     including participants never measured at that specific day, or with
+#     no post-vaccination sample at all.
 #
-#     IMPORTANT: this is a *statistically meaningful* difference, not just a
-#     bookkeeping one. The original script's per-comparison eset
-#     (qusage_dgsa.R lines ~971-979) filters only by pathogen/vaccine_type/
-#     study_accession and (time <= 0 | time == day) - it does not require a
-#     participant to actually have a day-X sample to be included. Since
-#     keep_most_recent_prevax_time_point(drop_postvax = FALSE) retains every
-#     participant's baseline plus *all* their post-vaccination samples (any
-#     day), a study with participants spread across several post-vaccination
-#     days pools every one of those participants' baselines into *every*
-#     day's comparison for that study - including participants never
-#     measured at that specific day. That inflates the "pre" group with
-#     unpaired, extraneous samples, which shifts its mean and inflates its
-#     variance relative to a strictly-paired comparison, weakening
-#     (increasing) the original script's p-values. filter_paired_samples()
-#     requires both timepoints per participant, so run_qusage_comparison()
-#     is systematically more powerful (smaller p-values) than the original
-#     script whenever this occurs - which is common, since most studies
-#     measure participants at several post-vaccination days. This is why
-#     rawPval/activation.score did not match under `sample_scope = "paired"`
-#     when validated against the original script's output.
-#
-#     Set `sample_scope = "study"` to reproduce the original script's
-#     sample selection exactly (see filter_study_baseline_samples()) - this
-#     is provided only to validate that the QuSAGE invocation itself
-#     matches the original script once the same samples are used; the main
-#     specification-analysis pipeline should always use the "paired"
-#     default, which is both the methodologically correct choice and the
-#     one consistent with dearseq and Chapter 2, Section 2.2.2.
+#     A stricter alternative, sample_scope = "paired" (via the shared
+#     filter_paired_samples() helper in R/dgsa_common.R - the same one
+#     dearseq uses, requiring both timepoints per participant), is also
+#     available but is NOT the default: it is systematically more powerful
+#     (smaller p-values) than the original script whenever a study spans
+#     multiple post-vaccination days, which is common - this is what caused
+#     rawPval/activation.score not to match the original script when first
+#     validated (see validate_qusage_refactor.R, since deleted, and the
+#     accompanying PR discussion). "study" is the default because
+#     reproducing Hagan et al.'s approach faithfully, not improving on it,
+#     is the goal here.
 #   - Genes with any missing value are dropped per comparison (across all
 #     studies contributing to that vaccine x timepoint), not once globally
 #     across the entire dataset. This still guarantees every per-study
@@ -54,8 +47,7 @@
 #     (R/dgsa_common.R), the same helper dearseq uses, rather than the
 #     original script's separate weighted multi-study correlation pipeline
 #     (which fed the circos plots' correlation ring, not the DGSA test
-#     itself). This is not part of the QuSAGE algorithm's own output, so it
-#     is not covered by the reproducibility check against the old script.
+#     itself). This is not part of the QuSAGE algorithm's own output.
 # =============================================================================
 
 #' Keep only specified symbols in a given list of gene sets
@@ -82,18 +74,18 @@ keep_symbols <- function(genesets.symbol, symbols2keep, min_size = 2) {
 #' Filter samples the way the original qusage_dgsa.R did
 #'
 #' Reproduces the sample selection of the original Hagan-et-al.-derived
-#' script's per-comparison `cur_eset` (lines ~971-979): every participant's
-#' most recent baseline (pre-vaccination) sample is kept, together with
-#' every day = `day` post-vaccination sample, for the given vaccine -
-#' regardless of whether a given participant has both. This can leave some
-#' baseline samples "unpaired" (no matching day = `day` sample for that
-#' participant), unlike [filter_paired_samples()] (R/dgsa_common.R), which
-#' requires both and is what [run_qusage_comparison()] uses by default.
+#' script's per-comparison `cur_eset` (originally at qusage_dgsa.R lines
+#' ~971-979, since deleted): every participant's most recent baseline
+#' (pre-vaccination) sample is kept, together with every day = `day`
+#' post-vaccination sample, for the given vaccine - regardless of whether a
+#' given participant has both. This can leave some baseline samples
+#' "unpaired" (no matching day = `day` sample for that participant), unlike
+#' [filter_paired_samples()] (R/dgsa_common.R), which requires both.
 #'
-#' Provided only to validate [run_qusage_comparison()] against the original
-#' script's output (`sample_scope = "study"`) - see the design notes at the
-#' top of this file. The main specification-analysis pipeline should always
-#' use the "paired" default.
+#' This is what [run_qusage_comparison()] uses by default
+#' (`sample_scope = "study"`), since faithfully reproducing the original
+#' script's behaviour is the goal - see the design notes at the top of this
+#' file.
 #'
 #' @param hipc Merged clinical/expression tibble.
 #' @param vax Vaccine name to filter to (matches `hipc$vaccine_name`).
@@ -120,15 +112,16 @@ filter_study_baseline_samples <- function(hipc, vax, day) {
 
 #' Run one QuSAGE comparison (vaccine x timepoint)
 #'
-#' Filters to samples for `vax` at `day` (by default, paired pre-/
-#' post-vaccination samples, via [filter_paired_samples()]; see
-#' `sample_scope`), restricts to genes complete across those samples and
-#' gene sets retaining at least 2 such genes ([keep_symbols()]), runs
-#' `qusage::qusage()` independently within each contributing study, and
-#' meta-analyses the resulting per-study QSarray objects across studies via
-#' `qusage::combinePDFs()` (a single study's QSarray is used directly with
-#' no meta-analysis needed). Also computes gene-set correlations with
-#' immune response ([calculate_gs_correlation()]).
+#' Filters to samples for `vax` at `day` (by default, reproducing the
+#' original script's sample selection exactly, via
+#' [filter_study_baseline_samples()]; see `sample_scope`), restricts to
+#' genes complete across those samples and gene sets retaining at least 2
+#' such genes ([keep_symbols()]), runs `qusage::qusage()` independently
+#' within each contributing study, and meta-analyses the resulting
+#' per-study QSarray objects across studies via `qusage::combinePDFs()` (a
+#' single study's QSarray is used directly with no meta-analysis needed).
+#' Also computes gene-set correlations with immune response
+#' ([calculate_gs_correlation()]).
 #'
 #' @param vax Vaccine name.
 #' @param day Post-vaccination timepoint (days).
@@ -141,13 +134,15 @@ filter_study_baseline_samples <- function(hipc, vax, day) {
 #'   (default) is the baseline specification (Table 2.1). Set to NULL to
 #'   omit the argument entirely and use `qusage::qusage()`'s own default,
 #'   matching the original script (which never passed `var.equal`).
-#' @param sample_scope "paired" (default): require each participant to have
-#'   both the baseline and the day = `day` sample
-#'   ([filter_paired_samples()]) - the methodologically correct choice, and
-#'   the one consistent with dearseq. "study": reproduce the original
-#'   script's more permissive sample selection
-#'   ([filter_study_baseline_samples()]), for validating this function
-#'   against the original script's output only.
+#' @param sample_scope "study" (default): reproduce the original script's
+#'   sample selection exactly ([filter_study_baseline_samples()]) - every
+#'   participant's baseline is pooled into every day's comparison for their
+#'   study, regardless of whether they have a matching post-vaccination
+#'   sample. "paired": require each participant to have both the baseline
+#'   and the day = `day` sample ([filter_paired_samples()]) - a
+#'   methodologically stricter alternative (matching dearseq's sample
+#'   selection), not used by default since the goal here is to reproduce
+#'   Hagan et al.'s approach, not to improve on it.
 #'
 #' @return A list with elements `pvals` (rawPval, one value per BTM gene
 #'   set, NA for gene sets dropped by the completeness filter), `score`
@@ -156,7 +151,7 @@ filter_study_baseline_samples <- function(hipc, vax, day) {
 #'   correlations with immune response); or NULL if there is insufficient
 #'   data for this comparison.
 run_qusage_comparison <- function(vax, day, hipc, BTM, gene_names, equal_variance = FALSE,
-                                  sample_scope = c("paired", "study")) {
+                                  sample_scope = c("study", "paired")) {
   sample_scope <- match.arg(sample_scope)
 
   df <- if (sample_scope == "paired") {
