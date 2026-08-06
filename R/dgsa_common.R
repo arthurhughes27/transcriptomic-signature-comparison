@@ -17,15 +17,25 @@
 #' @param hipc Merged clinical/expression tibble (as in
 #'   data/hipc_merged_*.rds), with columns `vaccine_name`, `participant_id`,
 #'   and `time_post_last_vax`.
+#' @param days Optional numeric vector restricting the result to specific
+#'   post-vaccination timepoints (days). NULL (default) includes every
+#'   post-vaccination timepoint present in `hipc`. Days with no matching
+#'   data in `hipc` are silently ignored (rather than erroring), so this can
+#'   be set to a fixed "days of interest" vector shared across datasets that
+#'   don't all cover every day.
 #'
 #' @return A tibble with one row per valid comparison, columns
 #'   `vaccine_name` and `day`.
-list_valid_comparisons <- function(hipc) {
+list_valid_comparisons <- function(hipc, days = NULL) {
   timepoints <- hipc |>
     dplyr::filter(time_post_last_vax > 0) |>
     dplyr::pull(time_post_last_vax) |>
     unique() |>
     sort()
+
+  if (!is.null(days)) {
+    timepoints <- intersect(timepoints, days)
+  }
 
   purrr::map_dfr(timepoints, function(day) {
     valid_vaccines <- hipc |>
