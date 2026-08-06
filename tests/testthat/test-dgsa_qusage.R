@@ -50,6 +50,11 @@ qusage_gene_names <- function(hipc) {
   ))
 }
 
+test_that("run_qusage_comparison() defaults sample_scope to 'study' (reproducing the original script)", {
+  default_scope <- eval(formals(run_qusage_comparison)$sample_scope)
+  expect_equal(default_scope[1], "study")
+})
+
 test_that("run_qusage_comparison() runs end-to-end on synthetic data", {
   testthat::skip_if_not_installed("qusage")
 
