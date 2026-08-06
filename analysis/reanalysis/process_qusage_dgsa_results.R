@@ -1,7 +1,7 @@
 # =============================================================================
-# Preprocessing of dearseq DGSA Results
+# Preprocessing of QuSAGE DGSA Results
 # =============================================================================
-# Thin driver: tidies the raw dearseq results list into a long-format
+# Thin driver: tidies the raw QuSAGE results list into a long-format
 # dataframe and applies p-value adjustment (R/postprocessing.R), then adds
 # condition/gene-set-aggregate colours for plotting (R/plot_helpers.R). All
 # the actual logic lives in R/.
@@ -17,24 +17,24 @@ source(fs::path("R", "load_all.R"))
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-p_results_list <- fs::path("output", "results", "reanalysis", "dearseq_dgsa_results_list.rds")
-p_results_df   <- fs::path("output", "results", "reanalysis", "dearseq_dgsa_results_processed.rds")
+p_results_list <- fs::path("output", "results", "reanalysis", "qusage_dgsa_results_list.rds")
+p_results_df   <- fs::path("output", "results", "reanalysis", "qusage_dgsa_results_processed.rds")
 p_data_btm     <- fs::path("data", "BTM_processed.rds")
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
-dearseq_dgsa_list <- readRDS(p_results_list)
-BTM               <- readRDS(p_data_btm)
+qusage_dgsa_list <- readRDS(p_results_list)
+BTM              <- readRDS(p_data_btm)
 
 # =============================================================================
 # TIDY, ADJUST, AND COLOUR
 # =============================================================================
 
 results_df <- build_tidy_dgsa_results(
-  results_list     = dearseq_dgsa_list,
+  results_list     = qusage_dgsa_list,
   genesets         = BTM,
   conditions_order = default_conditions_order(),
-  method           = "dearseq"
+  method           = "qusage"
 ) %>%
   assign_dgsa_colours(
     condition_colors = default_condition_colors(),
