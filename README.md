@@ -22,6 +22,8 @@ R/                                          # Modular, reusable analysis functio
 ├── specifications.R                        # Specification grid generators (Table 2.1): raw (66) and post-hoc (540) tiers
 ├── postprocessing.R                        # Tidies a raw DGSA results list and applies p-value adjustment (3 scopes x 6 methods)
 ├── robustness_metrics.R                    # Computes the robustness metric pi_{g,v,j} by accumulating counts across raw runs
+├── comparison_metrics.R                    # Stage 1: dearseq vs QuSAGE concordance metrics (correlation, agreement, kappa)
+├── plot_helpers.R                          # Shared colour assignment + default condition/aggregate configuration
 └── synthetic_data.R                        # make_synthetic_is2_data(): small synthetic dataset for testing without real data
 
 tests/                                      # testthat suite for R/ (run via `Rscript tests/run_tests.R`)
@@ -42,10 +44,12 @@ analysis/
 │   ├── is2_bubble_plot.R                 # Main-text figure: study x timepoint sample bubble plot
 │   └── is2_appendix_descriptives.R       # Appendix: covariate distributions + study-level sample size table
 └── reanalysis/
-    ├── reanalysis_master.R               # Runs the dearseq DGSA pipeline end-to-end
+    ├── reanalysis_master.R               # Runs the full Stage 1 pipeline end-to-end
     ├── dearseq_dgsa.R                    # Thin driver: baseline dearseq specification, via R/dgsa_common.R + R/dgsa_dearseq.R
-    ├── process_dearseq_dgsa_results.R    # Tidies dearseq results, assigns colours, applies 6 p-value correction methods x 3 scopes
-    ├── dgsa_comparison_example.R         # Example comparison of dearseq vs QuSAGE under fixed hyperparameters
+    ├── process_dearseq_dgsa_results.R    # Thin driver: tidy + adjust (R/postprocessing.R) + colour (R/plot_helpers.R)
+    ├── qusage_dgsa.R                     # Thin driver: baseline QuSAGE specification, via R/dgsa_common.R + R/dgsa_qusage.R
+    ├── process_qusage_dgsa_results.R     # Thin driver: tidy + adjust (R/postprocessing.R) + colour (R/plot_helpers.R)
+    ├── dgsa_comparison_example.R         # Stage 1: dearseq vs QuSAGE baseline comparison (R/comparison_metrics.R)
     └── plot_circos.R                     # Circos plots comparing DGSA results across methods/timepoints/directions
 
 manuscript/figures/                       # Pipeline overview and robustness diagrams for the write-up
@@ -95,13 +99,15 @@ To keep this tractable across many analytical specifications (Chapter 2's robust
 - `R/specifications.R` — `build_raw_specification_grid()` / `build_posthoc_specification_grid()` / `build_full_specification_grid()`: builds the Table 2.1 specification space as two independent tiers (66 "raw" specifications requiring an actual DGSA run; 540 cheap "post-hoc" p-value-adjustment/threshold combinations applied afterwards), so the full 35,640-specification grid can be evaluated without running DGSA 35,640 times.
 - `R/postprocessing.R` — `build_tidy_dgsa_results()`: tidies a raw results list (from either `run_dearseq_comparison()` or `run_qusage_comparison()`) into one long-format table and applies p-value adjustment across all 3 scopes x 6 methods.
 - `R/robustness_metrics.R` — `count_significant_specifications()` / `accumulate_robustness_counts()` / `compute_robustness_metric()`: computes the robustness metric pi_{g,v,j} (Section 2.2.4) by streaming-accumulating significance counts across raw runs, without materialising the full specification x comparison table.
+- `R/comparison_metrics.R` — `compute_concordance_metrics()`: the Stage 1 (baseline method comparison) metrics — Spearman correlation of raw p-values and fold-change scores between dearseq and QuSAGE, plus agreement on significance calls (percent agreement, Cohen's kappa, both/either/neither-significant counts), both overall and per comparison.
+- `R/plot_helpers.R` — `assign_dgsa_colours()` and the default vaccine-condition/gene-set-aggregate colour palettes, shared by the dearseq and QuSAGE result-processing scripts so their outputs use consistent colours and factor levels.
 - `R/synthetic_data.R` — `make_synthetic_is2_data()`, a small synthetic dataset generator matching the `hipc_merged_*.rds`/`BTM_processed.rds` schema, used by the `tests/` suite (and available for local smoke-testing) without needing access to the real, private IS2 data.
 
-`analysis/reanalysis/dearseq_dgsa.R` is a thin driver: it loads the data, sources `R/load_all.R`, and loops `run_dearseq_comparison()` over every valid comparison at the baseline specification (bolded options in Table 2.1), checkpointing results incrementally. The Stage 1 (baseline method comparison) driver, and the Stage 2 specification-analysis driver scripts, are planned as later additions.
+The `analysis/reanalysis/` driver scripts are all thin: they load data, source `R/load_all.R`, and call into the modules above.
 
-- **`dearseq_dgsa.R`** — thin driver for the baseline dearseq specification; see `R/dgsa_dearseq.R` above.
-- **`process_dearseq_dgsa_results.R`** — reshapes the raw list into one tidy dataframe (`output/results/reanalysis/dearseq_dgsa_results_processed.rds`), one row per gene set x comparison, and appends p-value corrections for **6 methods** (`holm`, `hochberg`, `hommel`, `bonferroni`, `BH`, `BY`) applied at **3 scopes** (`global`, `withinTime`, `withinComparison`) — this multiplicity is itself part of the robustness assessment. Not yet rewired onto `R/postprocessing.R` (planned alongside the Stage 1 driver).
-- **`dgsa_comparison_example.R`** — worked example comparing dearseq and QuSAGE outputs under one fixed set of hyperparameters.
+- **`dearseq_dgsa.R`** / **`qusage_dgsa.R`** — loop `run_dearseq_comparison()` / `run_qusage_comparison()` over every valid comparison at each method's baseline specification (bolded options in Table 2.1), checkpointing results incrementally to `output/results/reanalysis/{method}_dgsa_results_list.rds`.
+- **`process_dearseq_dgsa_results.R`** / **`process_qusage_dgsa_results.R`** — `build_tidy_dgsa_results()` (tidy + p-value adjustment for **6 methods** — `holm`, `hochberg`, `hommel`, `bonferroni`, `BH`, `BY` — at **3 scopes** — `global`, `withinTime`, `withinComparison`, this multiplicity itself being part of the robustness assessment) followed by `assign_dgsa_colours()`, saved to `output/results/reanalysis/{method}_dgsa_results_processed.rds`.
+- **`dgsa_comparison_example.R`** — Stage 1: combines both methods' processed results and runs `compute_concordance_metrics()`, saving a summary (overall + per-comparison concordance) to `output/results/reanalysis/dgsa_comparison_summary.rds`.
 - **`plot_circos.R`** — `circlize`-based circos plots comparing the two methods' significant gene sets (by aggregate/functional category, direction of regulation, and correlation with immune response) across vaccines and timepoints, with configurable p-value correction method/scope, significance threshold, and score-filtering options — used to visualise where the two DGSA methods agree or diverge (the robustness question).
 
 ### Combined results dataframe schema
@@ -115,4 +121,4 @@ Both `dearseq_dgsa_results_processed.rds` and the QuSAGE equivalent share a comm
 source("analysis/analysis_master.R")
 ```
 
-This currently runs preprocessing end-to-end (`preprocessing_master.R`); the reanalysis (`reanalysis_master.R`, which runs `dearseq_dgsa.R` → `process_dearseq_dgsa_results.R`; a QuSAGE driver built on `R/dgsa_qusage.R` is pending) and descriptive (`descriptive_master.R`) scripts can be sourced separately once preprocessing has produced the files in `data/`. Some reanalysis scripts (e.g. dearseq DGSA) are long-running and checkpoint their results to `output/results/` so interrupted runs can resume rather than restart.
+This currently runs preprocessing end-to-end (`preprocessing_master.R`); the reanalysis (`reanalysis_master.R`, which runs `dearseq_dgsa.R` → `process_dearseq_dgsa_results.R` → `qusage_dgsa.R` → `process_qusage_dgsa_results.R` → `dgsa_comparison_example.R` → `plot_circos.R`) and descriptive (`descriptive_master.R`) scripts can be sourced separately once preprocessing has produced the files in `data/`. The dearseq and QuSAGE driver scripts are long-running and checkpoint their results to `output/results/` so interrupted runs can resume rather than restart.
