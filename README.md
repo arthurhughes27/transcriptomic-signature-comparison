@@ -36,8 +36,8 @@ analysis/
 │   ├── preprocessing_clinical.R          # Clinical/demographic data cleaning + vaccine/study metadata
 │   ├── preprocessing_expression.R        # Gene expression matrices (normalised/non-normalised)
 │   ├── preprocessing_immuneresponse.R    # Derives maximum fold-change (MFC) immune response outcomes
-│   ├── preprocessing_BTM.R               # Blood Transcriptional Modules gene sets
-│   ├── preprocessing_BG3M.R              # BloodGen3 Modules gene sets
+│   ├── preprocessing_BTM.R               # Blood Transcriptional Modules gene sets (depends on preprocessing_expression.R having run)
+│   ├── preprocessing_BG3M.R              # BloodGen3 Modules gene sets (depends on preprocessing_expression.R having run)
 │   └── preprocessing_merging.R           # Merges clinical + immune response + expression into analysis-ready tables
 ├── descriptive/
 │   ├── descriptive_master.R              # Runs descriptive analyses
@@ -75,7 +75,7 @@ Processed outputs (in `data/`), one row per sample/participant unless noted:
 | `hipc_clinical.rds` | 1 row/sample | `participant_id`, `study_accession`, `study_accession_unique` (disambiguates studies spanning >1 vaccine, e.g. `SDY1260a/b`), `gender`, `race`, `ethnicity`, `age_imputed`, `pathogen`, `vaccine_type` (abbreviated: CJ, IN, IN/RP, LV, PS, RVV, RP), `vaccine_name`, `vaccine_name_short`, `vaccine_colour`, `study_colour`, `study_time_collected`, `time_post_last_vax` |
 | `all_norm_expr.rds`, `young_noNorm_expr.rds`, `young_norm_expr.rds` | 1 row/sample | `participant_id`, `study_time_collected`, then one column per gene (lowercase HGNC symbol, e.g. `a1cf` … `zzz3`) |
 | `hipc_immResp.rds` | 1 row/participant | `participant_id`, then per-assay blocks prefixed `immResp_MFC_{anyAssay,nAb,elisa,elispot,hai}_*` with `_response_strain_analyte`, `_pre_time`, `_post_time`, `_pre_value`, `_post_value`, `_MFC`, `_log2_MFC` |
-| `BTM_processed.rds`, `BG3M_processed.rds` | gene-set object | `genesets` (list of lowercase gene symbol vectors), `geneset.names`, `geneset.descriptions`, `geneset.names.descriptions`, `geneset.aggregates` (functional category, factor for BTM) |
+| `BTM_processed.rds`, `BG3M_processed.rds` | gene-set object | `genesets` (list of lowercase gene symbol vectors), `geneset.names`, `geneset.descriptions`, `geneset.names.descriptions`, `geneset.aggregates` (functional category, factor for BTM). Gene sets are filtered to those with at least one gene present in `young_noNorm_expr.rds` — the actual analysis-ready gene set, after per-study NA filtering — not the raw, unfiltered `all_noNorm_eset.rds` gene list, so every retained gene set has at least one gene actually usable in downstream DGSA (a gene set with zero such genes previously slipped through, silently producing an NA p-value). |
 | `hipc_merged_all_norm.rds`, `hipc_merged_young_noNorm.rds`, `hipc_merged_young_norm.rds` | 1 row/sample | full outer/right join of clinical + immune response + expression, keyed by `participant_id` + `study_time_collected` |
 
 Key preprocessing decisions: "Unknown"/"Not Specified" gender & race are collapsed; MFC is computed as `post/pre` fold-change (log2-transformed) using the most recent pre-vaccination sample as baseline, restricted to a Day 21–35 (and ≤0) response window; duplicate baseline samples per participant are deduplicated and their timepoint recoded to 0.
