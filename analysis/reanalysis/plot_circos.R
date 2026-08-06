@@ -54,7 +54,7 @@ circos_defaults <- list(
   conditions         = levels(results_df$condition),
   aggregates_name    = btm_aggregates,
   p_correction       = "BH",
-  p_approach         = "global",
+  p_approach         = "withinTime",
   p_threshold        = 0.05,
   filter_variable    = "none",
   filter_mode        = "user",
@@ -749,3 +749,5 @@ single_day_configs <- tribble(
 )
 
 purrr::pwalk(single_day_configs, render_single_day_pdf)
+
+rm(list = ls())
