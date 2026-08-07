@@ -86,9 +86,12 @@ build_raw_specification_grid <- function() {
 build_posthoc_specification_grid <- function() {
   tidyr::expand_grid(
     adjustment_scope   = c("global", "withinTime", "withinComparison"),
-    adjustment_method    = c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY"),
-    alpha                  = c(0.0001, 0.001, 0.01, 0.05, 0.1),
-    fc_threshold             = c(0, 0.2, 0.4, 0.6, 0.8, 1.0)
+    # adjustment_method    = c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY"),
+    adjustment_method    = c("holm","BH", "BY"),
+    # alpha                  = c(0.0001, 0.001, 0.01, 0.05, 0.1),
+    alpha                    =  c(0.01, 0.05, 0.1),
+    # fc_threshold             = c(0, 0.2, 0.4, 0.6, 0.8, 1.0)
+    fc_threshold             = c(0, 0.5, 1)
   ) |>
     dplyr::mutate(
       is_baseline = adjustment_scope == "withinTime" &
