@@ -18,3 +18,13 @@ source(fs::path("analysis", "reanalysis", "dgsa_comparison_example.R"))
 # Also reads baseline results from the specification-analysis raw output
 # (see R/baseline_results.R) - same prerequisite as above.
 source(fs::path("analysis", "reanalysis", "plot_circos.R"))
+
+# Heatmap comparison of the two methods
+# Also reads baseline results from the specification-analysis raw output
+# (see R/baseline_results.R) - same prerequisite as above.
+source(fs::path("analysis", "reanalysis", "plot_heatmap_comparison.R"))
+
+# Baseline significance comparison (percentage significant, dearseq vs QuSAGE)
+# Also reads baseline results from the specification-analysis raw output
+# (see R/baseline_results.R) - same prerequisite as above.
+source(fs::path("analysis", "reanalysis", "plot_baseline_significance_comparison.R"))
