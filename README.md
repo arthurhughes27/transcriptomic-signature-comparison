@@ -19,9 +19,10 @@ R/                                          # Modular, reusable analysis functio
 ├── dgsa_common.R                           # Shared DGSA helpers: comparison listing, sample pairing, covariate matrices, gene-set correlation
 ├── dgsa_dearseq.R                          # Modular dearseq DGSA: run_dearseq_comparison() for one vaccine x timepoint comparison
 ├── dgsa_qusage.R                           # Modular QuSAGE DGSA: run_qusage_comparison(), same contract as run_dearseq_comparison()
-├── specifications.R                        # Specification grid generators (Table 2.1): raw (66) and post-hoc (540) tiers
+├── specifications.R                        # Specification grid generators (Table 2.1): raw (66) and post-hoc (81) tiers
 ├── postprocessing.R                        # Tidies a raw DGSA results list and applies p-value adjustment (3 scopes x 6 methods)
 ├── robustness_metrics.R                    # Computes the robustness metric pi_{g,v,j} by accumulating counts across raw runs
+├── robustness_heatmaps.R                   # Two-tier robustness heatmap: aggregate-level (main) + gene-set-level (supplementary)
 ├── comparison_metrics.R                    # Stage 1: dearseq vs QuSAGE concordance metrics (correlation, agreement, kappa)
 ├── plot_helpers.R                          # Shared colour assignment + default condition/aggregate configuration
 └── synthetic_data.R                        # make_synthetic_is2_data(): small synthetic dataset for testing without real data
@@ -43,14 +44,19 @@ analysis/
 │   ├── descriptive_master.R              # Runs descriptive analyses
 │   ├── is2_bubble_plot.R                 # Main-text figure: study x timepoint sample bubble plot
 │   └── is2_appendix_descriptives.R       # Appendix: covariate distributions + study-level sample size table
-└── reanalysis/
-    ├── reanalysis_master.R               # Runs the full Stage 1 pipeline end-to-end
-    ├── dearseq_dgsa.R                    # Thin driver: baseline dearseq specification, via R/dgsa_common.R + R/dgsa_dearseq.R
-    ├── process_dearseq_dgsa_results.R    # Thin driver: tidy + adjust (R/postprocessing.R) + colour (R/plot_helpers.R)
-    ├── qusage_dgsa.R                     # Thin driver: baseline QuSAGE specification, via R/dgsa_common.R + R/dgsa_qusage.R
-    ├── process_qusage_dgsa_results.R     # Thin driver: tidy + adjust (R/postprocessing.R) + colour (R/plot_helpers.R)
-    ├── dgsa_comparison_example.R         # Stage 1: dearseq vs QuSAGE baseline comparison (R/comparison_metrics.R)
-    └── plot_circos.R                     # Circos plots comparing DGSA results across methods/timepoints/directions
+├── reanalysis/
+│   ├── reanalysis_master.R               # Runs the full Stage 1 pipeline end-to-end
+│   ├── dearseq_dgsa.R                    # Thin driver: baseline dearseq specification, via R/dgsa_common.R + R/dgsa_dearseq.R
+│   ├── process_dearseq_dgsa_results.R    # Thin driver: tidy + adjust (R/postprocessing.R) + colour (R/plot_helpers.R)
+│   ├── qusage_dgsa.R                     # Thin driver: baseline QuSAGE specification, via R/dgsa_common.R + R/dgsa_qusage.R
+│   ├── process_qusage_dgsa_results.R     # Thin driver: tidy + adjust (R/postprocessing.R) + colour (R/plot_helpers.R)
+│   ├── dgsa_comparison_example.R         # Stage 1: dearseq vs QuSAGE baseline comparison (R/comparison_metrics.R)
+│   └── plot_circos.R                     # Circos plots comparing DGSA results across methods/timepoints/directions
+└── specification_analysis/
+    ├── 01_build_specification_grid.R     # Builds + saves the raw (66) and post-hoc (81) specification grids
+    ├── 02_run_raw_specifications.R       # Runs each raw specification across every valid comparison (checkpointed)
+    ├── 03_apply_posthoc_and_robustness.R # Tidies/adjusts raw results and accumulates the robustness metric (checkpointed)
+    └── 04_specification_heatmaps.R       # Two-tier robustness heatmap (R/robustness_heatmaps.R)
 
 manuscript/figures/                       # Pipeline overview and robustness diagrams for the write-up
 transcriptomic-signature-comparison.Rproj
@@ -96,9 +102,10 @@ To keep this tractable across many analytical specifications (Chapter 2's robust
 - `R/dgsa_common.R` — shared building blocks used by every DGSA method: `list_valid_comparisons()` (which vaccine x timepoint pairs have usable data, optionally restricted to a given set of days), `filter_paired_samples()` (pre-/post-vaccination sample pairing per participant), `build_covariate_matrix()` (design matrix for an arbitrary covariate subset, with automatic collinearity removal), and `calculate_gs_correlation()` (gene-set-level correlation with immune response).
 - `R/dgsa_dearseq.R` — `run_dearseq_comparison(vax, day, hipc, BTM, gene_names, covariates, which_weights, gene_based_weights)`: runs one comparison with `dearseq::dgsa_seq()`, parameterised by the dearseq-specific hyperparameters from Table 2.1 (covariate set; mean-variance weighting method/level), plus gene-set scoring (`calculate_scores()`).
 - `R/dgsa_qusage.R` — `run_qusage_comparison(vax, day, hipc, BTM, gene_names, equal_variance, sample_scope)`: the QuSAGE equivalent, with the same contract (same inputs/outputs) as `run_dearseq_comparison()`. Runs `qusage::qusage()` independently per contributing study and meta-analyses across studies via `qusage::combinePDFs()` (Meng et al. 2019), parameterised by the QuSAGE-specific hyperparameter from Table 2.1 (equal-variance assumption). Replaces the original, monolithic `qusage_dgsa.R` (adapted from Hagan et al. 2022, since deleted): the goal here is a faithful, modular reproduction of Hagan et al.'s approach, not a methodologically "corrected" one, so `sample_scope` defaults to `"study"`, which reproduces the original script's (permissive) sample selection exactly — see the design notes at the top of the file. A stricter alternative (`sample_scope = "paired"`, matching dearseq's sample selection) is available but not used by default.
-- `R/specifications.R` — `build_raw_specification_grid()` / `build_posthoc_specification_grid()` / `build_full_specification_grid()`: builds the Table 2.1 specification space as two independent tiers (66 "raw" specifications requiring an actual DGSA run; 540 cheap "post-hoc" p-value-adjustment/threshold combinations applied afterwards), so the full 35,640-specification grid can be evaluated without running DGSA 35,640 times.
+- `R/specifications.R` — `build_raw_specification_grid()` / `build_posthoc_specification_grid()` / `build_full_specification_grid()`: builds the Table 2.1 specification space as two independent tiers (66 "raw" specifications requiring an actual DGSA run; 81 cheap "post-hoc" p-value-adjustment/threshold combinations applied afterwards — 3 adjustment scopes x 3 adjustment methods x 3 alphas x 3 fold-change thresholds, relaxed down from the original Table 2.1 grid for tractability), so the full 5,346-specification grid can be evaluated without running DGSA 5,346 times.
 - `R/postprocessing.R` — `build_tidy_dgsa_results()`: tidies a raw results list (from either `run_dearseq_comparison()` or `run_qusage_comparison()`) into one long-format table and applies p-value adjustment across all 3 scopes x 6 methods.
-- `R/robustness_metrics.R` — `count_significant_specifications()` / `accumulate_robustness_counts()` / `compute_robustness_metric()`: computes the robustness metric pi_{g,v,j} (Section 2.2.4) by streaming-accumulating significance counts across raw runs, without materialising the full specification x comparison table.
+- `R/robustness_metrics.R` — `count_significant_specifications()` / `accumulate_robustness_counts()` / `compute_robustness_metric()`: computes the robustness metric pi_{g,v,j} (Section 2.2.4) by streaming-accumulating significance counts across raw runs, without materialising the full specification x comparison table. Note that `n_evaluated` may vary slightly across gene set x vaccine x timepoint comparisons, since a small minority of raw specification x comparison combinations fail to produce a result (e.g. dearseq occasionally estimates negative variance weights) and are excluded from that comparison's count rather than treated as non-significant.
+- `R/robustness_heatmaps.R` — `join_geneset_aggregates()` / `plot_robustness_heatmap_aggregate()` / `plot_robustness_heatmap_genesets()`: the two-tier visual summary of the robustness metric. Both heatmaps use the same layout — comparisons on the x-axis, faceted by timepoint (so where timepoints change is unambiguous) and ordered within each facet by vaccine (`default_conditions_order()`); a sequential white (0) to green (1) colour scale (`scale_fill_gradient`, not diverging/viridis, since robustness has a natural zero). The aggregate-level heatmap (main figure) shows one row per gene-set aggregate, cell colour the unweighted mean robustness across that aggregate's gene sets. The gene-set-level heatmap (supplementary figure) shows one row per gene set — grouped by aggregate (existing BTM factor order) then alphabetically within an aggregate — with a colour-coded annotation strip (`default_aggregate_colors()`, the same palette as the circos plots) combined via `patchwork::wrap_plots()`; gene sets with zero robustness in every comparison are dropped by default (`drop_null_gene_sets = TRUE`).
 - `R/comparison_metrics.R` — `compute_concordance_metrics()`: the Stage 1 (baseline method comparison) metrics — Spearman correlation of raw p-values and fold-change scores between dearseq and QuSAGE, plus agreement on significance calls (percent agreement, Cohen's kappa, both/either/neither-significant counts), both overall and per comparison.
 - `R/plot_helpers.R` — `assign_dgsa_colours()` and the default vaccine-condition/gene-set-aggregate colour palettes, shared by the dearseq and QuSAGE result-processing scripts so their outputs use consistent colours and factor levels.
 - `R/synthetic_data.R` — `make_synthetic_is2_data()`, a small synthetic dataset generator matching the `hipc_merged_*.rds`/`BTM_processed.rds` schema, used by the `tests/` suite (and available for local smoke-testing) without needing access to the real, private IS2 data.
@@ -116,13 +123,12 @@ Both `dearseq_dgsa_results_processed.rds` and the QuSAGE equivalent share a comm
 
 ### 4. Specification analysis (`analysis/specification_analysis/`)
 
-Chapter 2, Section 2.2.4's robustness/specification analysis: evaluates the 35,640-specification grid from Table 2.1 (see `R/specifications.R` above) and computes the robustness metric pi_{g,v,j} for every gene set x vaccine x timepoint comparison, without ever running DGSA 35,640 times or materialising a table of that size (see `R/robustness_metrics.R` above for how). Three numbered driver scripts, run in order:
+Chapter 2, Section 2.2.4's robustness/specification analysis: evaluates the 5,346-specification grid (66 raw x 81 post-hoc, see `R/specifications.R` above) and computes the robustness metric pi_{g,v,j} for every gene set x vaccine x timepoint comparison, without ever running DGSA 5,346 times or materialising a table of that size (see `R/robustness_metrics.R` above for how). Four numbered driver scripts, run in order:
 
-- **`01_build_specification_grid.R`** — builds and saves the raw (66) and post-hoc (540) specification grids to `output/results/specification_analysis/`.
+- **`01_build_specification_grid.R`** — builds and saves the raw (66) and post-hoc (81) specification grids to `output/results/specification_analysis/`.
 - **`02_run_raw_specifications.R`** — **the expensive step.** Runs each of the 66 raw specifications across every valid comparison (dearseq's permutation test in particular is not cheap), checkpointing each specification's results to its own file (`output/results/specification_analysis/raw/{spec_label}.rds`); an interrupted run resumes rather than restarts, both across specifications and within one. Has a `SMOKE_TEST` switch at the top to restrict to a handful of comparisons first, to confirm the whole pipeline runs end-to-end before committing a laptop to the full run.
 - **`03_apply_posthoc_and_robustness.R`** — tidies and p-value-adjusts each raw specification's results (`R/postprocessing.R`) and folds them into the robustness-metric accumulator (`R/robustness_metrics.R`), checkpointed by which raw specifications have been accumulated so far (`output/results/specification_analysis/robustness_accumulator_state.rds`). Safe to re-run at any point, including while `02` is still producing more results — saves `output/results/specification_analysis/robustness_metrics.rds`, warning if the result is still partial.
-
-A fourth script producing the **specification heatmap** (the visualisation summary tool introduced alongside the robustness metric) is intentionally not yet built — its design hasn't been finalised.
+- **`04_specification_heatmaps.R`** — builds the two-tier robustness heatmap (`R/robustness_heatmaps.R` above): the aggregate-level heatmap (main figure) saved to `output/figures/specification_analysis/robustness_heatmap_aggregate.png`, and the gene-set-level heatmap (supplementary figure, height scaled to the number of gene sets shown) saved to `output/figures/specification_analysis/robustness_heatmap_genesets.png`. Safe to run against partial results from `03`.
 
 ## Running the pipeline
 
