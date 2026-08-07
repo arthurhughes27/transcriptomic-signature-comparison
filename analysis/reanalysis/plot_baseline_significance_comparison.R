@@ -27,7 +27,7 @@ spec_dir       <- fs::path("output", "results", "specification_analysis")
 raw_dir        <- fs::path(spec_dir, "raw")
 p_raw_grid     <- fs::path(spec_dir, "raw_specification_grid.rds")
 figures_folder <- fs::path("output", "figures", "reanalysis")
-p_fig          <- fs::path(figures_folder, "baseline_significance_comparison.png")
+p_fig          <- fs::path(figures_folder, "baseline_significance_comparison.pdf")
 
 for (p_required in c(p_data_btm, p_raw_grid)) {
   if (!fs::file_exists(p_required)) {
