@@ -15,4 +15,6 @@ source(fs::path("analysis", "reanalysis", "process_qusage_dgsa_results.R"))
 source(fs::path("analysis", "reanalysis", "dgsa_comparison_example.R"))
 
 # Circos plots comparing the two methods
+# Also reads baseline results from the specification-analysis raw output
+# (see R/baseline_results.R) - same prerequisite as above.
 source(fs::path("analysis", "reanalysis", "plot_circos.R"))
