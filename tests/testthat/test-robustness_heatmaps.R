@@ -1,0 +1,117 @@
+test_that("join_geneset_aggregates() attaches gs.aggregate by gs.name", {
+  robustness_df <- tibble::tibble(gs.name = c("gs1", "gs2", "gs3"), robustness = c(0.1, 0.5, 0.9))
+  genesets <- list(
+    geneset.names      = c("gs1", "gs2", "gs3"),
+    geneset.aggregates = factor(c("A", "B", "A"), levels = c("A", "B", "C"))
+  )
+
+  out <- join_geneset_aggregates(robustness_df, genesets)
+
+  expect_true("gs.aggregate" %in% colnames(out))
+  expect_equal(as.character(out$gs.aggregate), c("A", "B", "A"))
+  expect_equal(levels(out$gs.aggregate), c("A", "B", "C"))
+})
+
+test_that("order_robustness_comparisons() orders condition/time and appends unrecognised conditions with a warning", {
+  robustness_df <- tibble::tibble(
+    condition = c("V2", "V1", "V3"),
+    time      = c("7", "1", "3")
+  )
+
+  expect_warning(
+    out <- order_robustness_comparisons(robustness_df, conditions_order = c("V1", "V2")),
+    "V3"
+  )
+
+  expect_equal(levels(out$condition), c("V1", "V2", "V3"))
+  expect_equal(levels(out$time), c("1", "3", "7"))
+})
+
+test_that("order_robustness_comparisons() does not warn when all conditions are recognised", {
+  robustness_df <- tibble::tibble(condition = c("V2", "V1"), time = c(3, 1))
+  expect_no_warning(order_robustness_comparisons(robustness_df, conditions_order = c("V1", "V2")))
+})
+
+test_that("summarise_robustness_by_aggregate() computes the unweighted mean per aggregate", {
+  robustness_df <- tibble::tibble(
+    gs.aggregate = factor(c("A", "A", "B"), levels = c("A", "B")),
+    condition    = "V1",
+    time         = 7,
+    robustness   = c(0.2, 0.8, 0.5)
+  )
+
+  out <- summarise_robustness_by_aggregate(robustness_df)
+
+  expect_equal(out$mean_robustness[out$gs.aggregate == "A"], 0.5)
+  expect_equal(out$mean_robustness[out$gs.aggregate == "B"], 0.5)
+  expect_equal(out$n_gene_sets[out$gs.aggregate == "A"], 2)
+})
+
+test_that("plot_robustness_heatmap_aggregate() returns a ggplot without erroring", {
+  testthat::skip_if_not_installed("ggplot2")
+
+  set.seed(1)
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = c("gs1", "gs2"),
+    condition = c("Vaccine A", "Vaccine B"),
+    time      = c(1, 7)
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor(ifelse(gs.name == "gs1", "A", "B"), levels = c("A", "B")),
+      robustness    = stats::runif(dplyr::n())
+    )
+
+  p <- plot_robustness_heatmap_aggregate(robustness_df, conditions_order = c("Vaccine A", "Vaccine B"))
+
+  expect_s3_class(p, "ggplot")
+})
+
+test_that("plot_robustness_heatmap_genesets() returns a patchwork object and drops always-null gene sets", {
+  testthat::skip_if_not_installed("patchwork")
+  testthat::skip_if_not_installed("ggplot2")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = c("gs1", "gs2", "gs3"),
+    condition = c("Vaccine A", "Vaccine B"),
+    time      = c(1, 7)
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor(dplyr::if_else(gs.name %in% c("gs1", "gs2"), "A", "B"), levels = c("A", "B")),
+      robustness    = ifelse(gs.name == "gs3", 0, 0.5)  # gs3 is always null
+    )
+
+  expect_message(
+    p <- plot_robustness_heatmap_genesets(
+      robustness_df,
+      conditions_order = c("Vaccine A", "Vaccine B"),
+      aggregate_colors  = c("#111111", "#222222")
+    ),
+    "Dropping 1 gene set"
+  )
+
+  expect_s3_class(p, "patchwork")
+})
+
+test_that("plot_robustness_heatmap_genesets() keeps all gene sets when drop_null_gene_sets = FALSE", {
+  testthat::skip_if_not_installed("patchwork")
+  testthat::skip_if_not_installed("ggplot2")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = c("gs1", "gs2"),
+    condition = "Vaccine A",
+    time      = 1
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor("A", levels = "A"),
+      robustness    = 0
+    )
+
+  p <- plot_robustness_heatmap_genesets(
+    robustness_df,
+    conditions_order    = "Vaccine A",
+    aggregate_colors     = "#111111",
+    drop_null_gene_sets   = FALSE
+  )
+
+  expect_s3_class(p, "patchwork")
+})
