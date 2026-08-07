@@ -28,8 +28,8 @@ p_robustness      <- fs::path("output", "results", "specification_analysis", "ro
 p_results_dearseq <- fs::path("output", "results", "reanalysis", "dearseq_dgsa_results_processed.rds")
 p_results_qusage  <- fs::path("output", "results", "reanalysis", "qusage_dgsa_results_processed.rds")
 out_dir           <- fs::path("output", "figures", "specification_analysis")
-p_fig_binary      <- fs::path(out_dir, "robustness_vs_baseline_binary.png")
-p_fig_continuous  <- fs::path(out_dir, "robustness_vs_baseline_continuous.png")
+p_fig_binary      <- fs::path(out_dir, "robustness_vs_baseline_binary.pdf")
+p_fig_continuous  <- fs::path(out_dir, "robustness_vs_baseline_continuous.pdf")
 
 for (p_required in c(p_robustness, p_results_dearseq, p_results_qusage)) {
   if (!fs::file_exists(p_required)) {

@@ -23,7 +23,7 @@ source(fs::path("R", "load_all.R"))
 
 p_metrics <- fs::path("output", "results", "specification_analysis", "robustness_metrics.rds")
 out_dir   <- fs::path("output", "figures", "specification_analysis")
-p_fig     <- fs::path(out_dir, "robustness_violin.png")
+p_fig     <- fs::path(out_dir, "robustness_violin.pdf")
 
 if (!fs::file_exists(p_metrics)) {
   stop(
