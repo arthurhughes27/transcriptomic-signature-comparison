@@ -25,8 +25,8 @@ source(fs::path("R", "load_all.R"))
 p_data_btm      <- fs::path("data", "BTM_processed.rds")
 p_metrics       <- fs::path("output", "results", "specification_analysis", "robustness_metrics.rds")
 out_dir         <- fs::path("output", "figures", "specification_analysis")
-p_fig_aggregate <- fs::path(out_dir, "robustness_heatmap_aggregate.png")
-p_fig_genesets  <- fs::path(out_dir, "robustness_heatmap_genesets.png")
+p_fig_aggregate <- fs::path(out_dir, "robustness_heatmap_aggregate.pdf")
+p_fig_genesets  <- fs::path(out_dir, "robustness_heatmap_genesets.pdf")
 
 if (!fs::file_exists(p_metrics)) {
   stop(

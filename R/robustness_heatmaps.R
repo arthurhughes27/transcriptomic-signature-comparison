@@ -10,6 +10,17 @@
 # to green (1).
 # =============================================================================
 
+# Square-root transformation for the robustness colour scale.
+# This expands low robustness values while preserving the 0-1 range
+# and the legend labels on the natural scale.
+power_trans <- function(power = 0.5) {
+  scales::trans_new(
+    name = paste0("power_", power),
+    transform = function(x) x^power,
+    inverse = function(x) x^(1 / power)
+  )
+}
+
 #' Join gene-set aggregate metadata onto a robustness table
 #'
 #' @param robustness_df Tibble with a `gs.name` column, as returned by
@@ -87,12 +98,18 @@ robustness_heatmap_layers <- function(low_colour, high_colour) {
       . ~ time, scales = "free_x", space = "free_x",
       labeller = ggplot2::labeller(time = function(x) paste0("Day ", x))
     ),
-    ggplot2::scale_fill_gradient(name = "Robustness", low = low_colour, high = high_colour, limits = c(0, 1)),
+    ggplot2::scale_fill_gradient(
+      name = "Robustness",
+      low = low_colour,
+      high = high_colour,
+      limits = c(0, 1),
+      trans = power_trans(0.5)
+    ),
     ggplot2::theme_minimal(),
     ggplot2::theme(
       panel.grid       = ggplot2::element_blank(),
       strip.background = ggplot2::element_rect(fill = "grey90", colour = NA),
-      strip.text        = ggplot2::element_text(face = "bold"),
+      strip.text        = ggplot2::element_text(face = "bold", size = 12),
       axis.text.x        = ggplot2::element_text(angle = 45, hjust = 1)
     )
   )
@@ -124,8 +141,16 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
   ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.aggregate, fill = mean_robustness)) +
     ggplot2::geom_tile(colour = "grey85") +
     ggplot2::scale_y_discrete(limits = rev(agg_levels)) +
-    robustness_heatmap_layers(low_colour, high_colour) +
-    ggplot2::labs(x = "Vaccine", y = "Gene set aggregate", title = "Robustness by gene-set aggregate")
+    robustness_heatmap_layers(low_colour, high_colour) + ggplot2::scale_fill_gradient(
+      name = "Mean robustness",
+      low = low_colour,
+      high = high_colour,
+      limits = c(0, 1),
+      trans = power_trans(0.5)
+    ) +
+    ggplot2::labs(x = "Vaccine", y = "Gene set aggregate", title = "Mean robustness by gene-set aggregate") + 
+    theme(axis.title = element_text(size = 20),
+          plot.title = element_text(size = 20))
 }
 
 #' Plot the gene-set-level robustness heatmap (supplementary figure)
@@ -201,7 +226,9 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
     robustness_heatmap_layers(low_colour, high_colour) +
     ggplot2::labs(x = "Vaccine", y = NULL, title = "Robustness by gene set") +
-    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 6))
+    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 6),
+                   axis.title.x = element_text(size = 20),
+                   plot.title = element_text(size = 20))
 
   patchwork::wrap_plots(p_strip, p_main, ncol = 2, widths = c(strip_width, 20), guides = "collect")
 }
