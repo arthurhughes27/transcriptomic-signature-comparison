@@ -45,8 +45,10 @@ plot_robustness_violin <- function(robustness_df,
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
       strip.background  = ggplot2::element_rect(fill = "grey90", colour = NA),
-      strip.text         = ggplot2::element_text(face = "bold"),
-      axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1)
+      strip.text         = ggplot2::element_text(face = "bold", size = 12),
+      axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1),
+      axis.title = element_text(size = 20),
+      plot.title = element_text(size = 20)
     ) +
     ggplot2::labs(
       x     = "Vaccine",
