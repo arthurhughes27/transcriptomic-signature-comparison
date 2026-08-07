@@ -41,8 +41,8 @@ test_that("build_significant_nonrobust_table() filters to significant-but-non-ro
     gs.name           = c("gs1", "gs2", "gs3"),
     condition         = "Vaccine A",
     time              = 1,
-    method            = "dearseq",
-    global.adjPval_BH = c(0.001, 0.001, 0.5)  # gs3 not significant, should be excluded
+    method                = "dearseq",
+    withinTime.adjPval_BH = c(0.001, 0.001, 0.5)  # gs3 not significant, should be excluded
   )
 
   out <- build_significant_nonrobust_table(
@@ -68,8 +68,8 @@ test_that("build_significant_nonrobust_table() orders least robust first and res
     gs.name           = c("gs1", "gs2", "gs3"),
     condition         = "Vaccine A",
     time              = 1,
-    method            = "dearseq",
-    global.adjPval_BH = c(0.01, 0.01, 0.01)
+    method                = "dearseq",
+    withinTime.adjPval_BH = c(0.01, 0.01, 0.01)
   )
 
   out <- build_significant_nonrobust_table(

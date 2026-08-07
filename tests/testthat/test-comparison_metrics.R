@@ -12,8 +12,8 @@ test_that("compute_concordance_metrics() computes expected agreement and correla
     gs.name           = c("gs1", "gs2", "gs1", "gs2"),
     method            = c("dearseq", "dearseq", "qusage", "qusage"),
     rawPval           = c(0.01, 0.5, 0.02, 0.6),
-    fc.score          = c(1.0, 0.1, 0.9, 0.05),
-    global.adjPval_BH = c(0.01, 0.5, 0.02, 0.6)
+    fc.score              = c(1.0, 0.1, 0.9, 0.05),
+    withinTime.adjPval_BH = c(0.01, 0.5, 0.02, 0.6)
   )
 
   out <- compute_concordance_metrics(results_df, alpha = 0.05)
@@ -42,8 +42,8 @@ test_that("compute_concordance_metrics() detects method-specific significance", 
     gs.name           = c("gs1", "gs1"),
     method            = c("dearseq", "qusage"),
     rawPval           = c(0.01, 0.5),
-    fc.score          = c(1.0, 0.1),
-    global.adjPval_BH = c(0.01, 0.5)
+    fc.score              = c(1.0, 0.1),
+    withinTime.adjPval_BH = c(0.01, 0.5)
   )
 
   out <- compute_concordance_metrics(results_df, alpha = 0.05)

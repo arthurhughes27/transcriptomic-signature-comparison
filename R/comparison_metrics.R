@@ -80,7 +80,7 @@ pivot_methods_wide <- function(results_df, value_cols) {
 #'   `overall` (the same metrics pooled across all comparisons).
 compute_concordance_metrics <- function(results_df,
                                         methods      = c("dearseq", "qusage"),
-                                        adj_pval_col  = "global.adjPval_BH",
+                                        adj_pval_col  = "withinTime.adjPval_BH",
                                         alpha          = 0.05,
                                         score_col       = "fc.score") {
   stopifnot(length(methods) == 2)
