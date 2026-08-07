@@ -11,6 +11,12 @@
 # Output written to output/tables/specification_analysis/ as .tex (ready to
 # \input{} into the thesis) and .csv (for reference), matching the
 # convention in analysis/descriptive/is2_appendix_descriptives.R.
+#
+# Baseline results are read directly from the raw specification-grid
+# outputs (R/baseline_results.R) - the same runs the robustness metric
+# itself is accumulated from - rather than from separately-run
+# analysis/reanalysis/dearseq_dgsa.R / qusage_dgsa.R results, which are not
+# guaranteed to reproduce identically.
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────
@@ -28,17 +34,18 @@ ROBUSTNESS_THRESHOLD <- 0.5
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-p_robustness      <- fs::path("output", "results", "specification_analysis", "robustness_metrics.rds")
-p_results_dearseq <- fs::path("output", "results", "reanalysis", "dearseq_dgsa_results_processed.rds")
-p_results_qusage  <- fs::path("output", "results", "reanalysis", "qusage_dgsa_results_processed.rds")
+spec_dir          <- fs::path("output", "results", "specification_analysis")
+raw_dir           <- fs::path(spec_dir, "raw")
+p_raw_grid        <- fs::path(spec_dir, "raw_specification_grid.rds")
+p_robustness      <- fs::path(spec_dir, "robustness_metrics.rds")
 p_data_btm        <- fs::path("data", "BTM_processed.rds")
 tables_dir        <- fs::path("output", "tables", "specification_analysis")
 
-for (p_required in c(p_robustness, p_results_dearseq, p_results_qusage, p_data_btm)) {
+for (p_required in c(p_robustness, p_raw_grid, p_data_btm)) {
   if (!fs::file_exists(p_required)) {
     stop(
       "Required file not found: ", p_required, ".\n",
-      "Run the specification_analysis/ and reanalysis/ driver scripts first."
+      "Run the specification_analysis/ driver scripts (01-03) first."
     )
   }
 }
@@ -48,11 +55,9 @@ fs::dir_create(tables_dir)
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 BTM                 <- readRDS(p_data_btm)
+raw_grid            <- readRDS(p_raw_grid)
 robustness_metrics  <- readRDS(p_robustness)
-baseline_results    <- dplyr::bind_rows(
-  readRDS(p_results_dearseq),
-  readRDS(p_results_qusage)
-)
+baseline_results    <- load_baseline_results_from_raw(raw_grid, raw_dir, BTM)
 
 # =============================================================================
 # TABLE 1 — top N most robust results
@@ -86,7 +91,7 @@ save_latex_table(
   path_tex = fs::path(tables_dir, "significant_nonrobust_results.tex"),
   path_csv = fs::path(tables_dir, "significant_nonrobust_results.csv"),
   caption  = sprintf(
-    "Gene set x vaccine x timepoint results significant at the baseline specification (global BH-adjusted p <= 0.05) but with robustness below %.2f: results whose significance is most sensitive to analytical choices.",
+    "Gene set x vaccine x timepoint results significant at the baseline specification (within-timepoint BH-adjusted p <= 0.05) but with robustness below %.2f: results whose significance is most sensitive to analytical choices.",
     ROBUSTNESS_THRESHOLD
   ),
   label = "tab:significant-nonrobust-results"

@@ -74,7 +74,7 @@ build_top_robust_table <- function(robustness_df, genesets, n = 20) {
 #'   `Method`, `Baseline p-value`, `Robustness`, ready for
 #'   [save_latex_table()].
 build_significant_nonrobust_table <- function(robustness_df, baseline_df, genesets,
-                                              pval_col            = "global.adjPval_BH",
+                                              pval_col            = "withinTime.adjPval_BH",
                                               alpha                = 0.05,
                                               robustness_threshold = 0.5,
                                               n                     = NULL) {

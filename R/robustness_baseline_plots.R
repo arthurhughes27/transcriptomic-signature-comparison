@@ -42,7 +42,7 @@ join_robustness_baseline <- function(robustness_df, baseline_df) {
 #'   p-value column (see [apply_pvalue_adjustments()] for naming) for
 #'   `mode = "binary"`'s significance call, or any p-value column (raw or
 #'   adjusted) for `mode = "continuous"`'s x-axis. Defaults to the same
-#'   `global.adjPval_BH` convention used for the Stage 1 comparison
+#'   `withinTime.adjPval_BH` convention used for the Stage 1 comparison
 #'   (R/comparison_metrics.R).
 #' @param alpha Significance threshold applied to `pval_col`, `mode =
 #'   "binary"` only.
@@ -50,7 +50,7 @@ join_robustness_baseline <- function(robustness_df, baseline_df) {
 #' @return A ggplot object, faceted by `method`.
 plot_robustness_vs_baseline <- function(df,
                                         mode     = c("binary", "continuous"),
-                                        pval_col = "global.adjPval_BH",
+                                        pval_col = "withinTime.adjPval_BH",
                                         alpha    = 0.05) {
   mode <- match.arg(mode)
   stopifnot(

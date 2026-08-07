@@ -40,10 +40,10 @@ test_that("plot_robustness_vs_baseline() binary mode returns a ggplot and classi
   testthat::skip_if_not_installed("ggplot2")
 
   df <- tibble::tibble(
-    gs.name           = c("gs1", "gs2", "gs3", "gs4"),
-    method            = c("dearseq", "dearseq", "qusage", "qusage"),
-    robustness         = c(0.9, 0.1, 0.8, 0.2),
-    global.adjPval_BH = c(0.001, 0.5, 0.02, 0.9)
+    gs.name               = c("gs1", "gs2", "gs3", "gs4"),
+    method                = c("dearseq", "dearseq", "qusage", "qusage"),
+    robustness             = c(0.9, 0.1, 0.8, 0.2),
+    withinTime.adjPval_BH = c(0.001, 0.5, 0.02, 0.9)
   )
 
   p <- plot_robustness_vs_baseline(df, mode = "binary")
@@ -59,10 +59,10 @@ test_that("plot_robustness_vs_baseline() continuous mode returns a ggplot with a
   testthat::skip_if_not_installed("ggplot2")
 
   df <- tibble::tibble(
-    gs.name           = c("gs1", "gs2", "gs3"),
-    method            = c("dearseq", "dearseq", "qusage"),
-    robustness         = c(0.9, 0.1, 0.5),
-    global.adjPval_BH = c(0.001, 0.5, 0)
+    gs.name               = c("gs1", "gs2", "gs3"),
+    method                = c("dearseq", "dearseq", "qusage"),
+    robustness             = c(0.9, 0.1, 0.5),
+    withinTime.adjPval_BH = c(0.001, 0.5, 0)
   )
 
   p <- plot_robustness_vs_baseline(df, mode = "continuous")
