@@ -28,12 +28,19 @@
 #'   `02_run_raw_specifications.R`).
 #' @param genesets Gene set list (as in `data/BTM_processed.rds` /
 #'   `data/BG3M_processed.rds`), passed to [build_tidy_dgsa_results()].
+#' @param conditions_order Optional vaccine-condition factor ordering,
+#'   passed through to [build_tidy_dgsa_results()] for every baseline
+#'   specification loaded, so `condition` has the same factor levels
+#'   (and order) across methods when the results are row-bound - matters
+#'   for anything that relies on `levels(result$condition)` downstream
+#'   (e.g. `analysis/reanalysis/plot_circos.R`). NULL (the default) uses
+#'   each specification's own conditions, sorted alphabetically.
 #'
 #' @return A tidy, p-value-adjusted results tibble (`dplyr::bind_rows()`
 #'   across every `is_baseline == TRUE` raw specification - typically one
 #'   per method), in the same shape as [build_tidy_dgsa_results()]'s output
 #'   for a single specification.
-load_baseline_results_from_raw <- function(raw_grid, raw_dir, genesets) {
+load_baseline_results_from_raw <- function(raw_grid, raw_dir, genesets, conditions_order = NULL) {
   baseline_specs <- dplyr::filter(raw_grid, is_baseline)
 
   if (nrow(baseline_specs) == 0) {
@@ -52,6 +59,9 @@ load_baseline_results_from_raw <- function(raw_grid, raw_dir, genesets) {
     }
 
     raw_results_list <- readRDS(p_spec_file)
-    build_tidy_dgsa_results(raw_results_list, genesets, method = spec$method)
+    build_tidy_dgsa_results(
+      raw_results_list, genesets,
+      conditions_order = conditions_order, method = spec$method
+    )
   })
 }

@@ -3,6 +3,14 @@
 # =============================================================================
 # Produces circos plots comparing QuSAGE and dearseq results across timepoints,
 # for both positively and negatively regulated gene sets.
+#
+# Baseline results are read from the raw specification-grid outputs
+# (R/baseline_results.R) - the same is_baseline == TRUE runs the robustness
+# metric itself is accumulated from - rather than from separately-run
+# analysis/reanalysis/dearseq_dgsa.R / qusage_dgsa.R results, which are not
+# guaranteed to reproduce identically. Requires
+# analysis/specification_analysis/01_build_specification_grid.R and
+# 02_run_raw_specifications.R to have been run first.
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────
@@ -13,18 +21,41 @@ suppressPackageStartupMessages({
   library(circlize)
 })
 
+source(fs::path("R", "load_all.R"))
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-p_results_dearseq <- fs::path("output", "results", "reanalysis", "dearseq_dgsa_results_processed.rds")
-p_results_qusage  <- fs::path("output", "results", "reanalysis",  "qusage_dgsa_results_processed.rds")
-figures_folder    <- fs::path("output", "figures", "reanalysis")
+p_data_btm     <- fs::path("data", "BTM_processed.rds")
+spec_dir       <- fs::path("output", "results", "specification_analysis")
+raw_dir        <- fs::path(spec_dir, "raw")
+p_raw_grid     <- fs::path(spec_dir, "raw_specification_grid.rds")
+figures_folder <- fs::path("output", "figures", "reanalysis")
+
+for (p_required in c(p_data_btm, p_raw_grid)) {
+  if (!fs::file_exists(p_required)) {
+    stop(
+      "Required file not found: ", p_required, ".\n",
+      "Run 01_build_specification_grid.R and 02_run_raw_specifications.R ",
+      "(analysis/specification_analysis/) first."
+    )
+  }
+}
+
+fs::dir_create(figures_folder)
 
 # ── Load and combine results ───────────────────────────────────────────────────
 
-results_df <- bind_rows(
-  readRDS(p_results_dearseq),
-  readRDS(p_results_qusage)
-)
+BTM      <- readRDS(p_data_btm)
+raw_grid <- readRDS(p_raw_grid)
+
+results_df <- load_baseline_results_from_raw(
+  raw_grid, raw_dir, BTM,
+  conditions_order = default_conditions_order()
+) %>%
+  assign_dgsa_colours(
+    condition_colors = default_condition_colors(),
+    aggregate_colors = default_aggregate_colors()
+  )
 
 # =============================================================================
 # CONFIGURATION

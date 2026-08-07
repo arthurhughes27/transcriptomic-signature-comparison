@@ -38,6 +38,32 @@ test_that("load_baseline_results_from_raw() loads only is_baseline == TRUE rows,
   expect_equal(nrow(out), 4)  # 2 gene sets x 1 comparison x 2 baseline specs
 })
 
+test_that("load_baseline_results_from_raw() applies a shared conditions_order across specifications", {
+  genesets <- list(
+    geneset.names        = c("gs1", "gs2"),
+    geneset.descriptions = c("desc1", "desc2"),
+    geneset.aggregates    = factor(c("A", "B"))
+  )
+
+  raw_grid <- tibble::tibble(
+    raw_spec_id = 1:2,
+    method       = c("dearseq", "qusage"),
+    spec_label   = c("dearseq_baseline", "qusage_baseline"),
+    is_baseline  = c(TRUE, TRUE)
+  )
+
+  tmp_dir <- tempfile()
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+
+  saveRDS(make_synthetic_raw_results_list(1), fs::path(tmp_dir, "dearseq_baseline.rds"))
+  saveRDS(make_synthetic_raw_results_list(2), fs::path(tmp_dir, "qusage_baseline.rds"))
+
+  out <- load_baseline_results_from_raw(raw_grid, tmp_dir, genesets, conditions_order = c("V1", "V0"))
+
+  expect_equal(levels(out$condition), c("V1", "V0"))
+})
+
 test_that("load_baseline_results_from_raw() errors informatively when a baseline results file is missing", {
   raw_grid <- tibble::tibble(
     raw_spec_id = 1, method = "dearseq", spec_label = "dearseq_baseline", is_baseline = TRUE
