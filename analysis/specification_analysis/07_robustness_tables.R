@@ -78,7 +78,8 @@ message(sprintf("Saved top-%d robust results table to: %s", TOP_N, tables_dir))
 
 significant_nonrobust <- build_significant_nonrobust_table(
   robustness_metrics, baseline_results, BTM,
-  robustness_threshold = ROBUSTNESS_THRESHOLD
+  robustness_threshold = ROBUSTNESS_THRESHOLD,
+  n = 20
 )
 
 save_latex_table(
