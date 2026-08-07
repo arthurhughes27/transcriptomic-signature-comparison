@@ -1,10 +1,13 @@
 # =============================================================================
-# IS2 Dataset — Study x Timepoint Sample Bubble Plot
+# IS2 Dataset — Vaccine x Timepoint Sample Bubble Plot
 # =============================================================================
 # Produces the main-text figure describing the IS2 dataset (Chapter 2,
-# Section 2.3.1): studies on the y-axis (coloured by vaccine), days
-# post-vaccination on the x-axis, bubble size proportional to the number of
-# transcriptomic samples available for that study x timepoint combination.
+# Section 2.3.1): vaccines on the y-axis, days post-vaccination on the
+# x-axis, bubble size proportional to the number of transcriptomic samples
+# available for that vaccine x timepoint combination (summed across every
+# contributing study). The per-study equivalent of this figure has been
+# moved to Appendix A (analysis/descriptive/is2_appendix_descriptives.R),
+# since a reader wants the vaccine-level picture first.
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────
@@ -26,26 +29,18 @@ hipc_merged_all_norm <- readRDS(
   fs::path(processed_data_folder, "hipc_merged_all_norm.rds")
 )
 
-# Study order fixed at preprocessing time (grouped by vaccine); reused here so
-# that this figure and the Appendix A descriptives (is2_appendix_descriptives.R)
-# render studies in the same order without depending on each other.
-study_order <- levels(hipc_merged_all_norm$study_accession_unique)
-
-# Vaccine name -> hex colour mapping (fixed at preprocessing time)
-fill_values <- hipc_merged_all_norm %>%
-  distinct(vaccine_name, vaccine_colour) %>%
-  { setNames(.$vaccine_colour, .$vaccine_name) }
+# Vaccine order fixed at preprocessing time (analysis/preprocessing/preprocessing_clinical.R)
+vaccine_order <- levels(hipc_merged_all_norm$vaccine_name)
 
 # =============================================================================
-# BUBBLE PLOT: SAMPLE COUNTS PER STUDY x TIMEPOINT
+# BUBBLE PLOT: SAMPLE COUNTS PER VACCINE x TIMEPOINT
 # =============================================================================
 
 counts <- hipc_merged_all_norm %>%
-  group_by(study_accession_unique, vaccine_colour,
-           time_post_last_vax, vaccine_name) %>%
+  group_by(vaccine_name, vaccine_colour, time_post_last_vax) %>%
   summarise(n = n(), .groups = "drop") %>%
   mutate(
-    study_accession_unique = factor(study_accession_unique, levels = study_order),
+    vaccine_name = factor(vaccine_name, levels = vaccine_order),
     # Order time points numerically
     time_post_last_vax = factor(
       as.character(time_post_last_vax),
@@ -54,28 +49,24 @@ counts <- hipc_merged_all_norm %>%
       ordered = TRUE
     ),
     # Compress bubble sizes with a sublinear transform so that a small number
-    # of large studies do not swamp the size scale; true counts are recovered
+    # of large vaccines do not swamp the size scale; true counts are recovered
     # via the legend breaks/labels below.
     size_var = n ^ (2 / 3)
   )
 
-size_breaks_counts <- c(10, 50, 100, 200)
+size_breaks_counts <- c(10, 50, 100, 200, 400)
 size_breaks         <- size_breaks_counts ^ (2 / 3)
 
-bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = study_accession_unique)) +
+bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
   geom_point(
     aes(size = size_var, fill = vaccine_name),
-    shape = 21, colour = "black", alpha = 0.75
+    shape = 21, colour = "black", alpha = 0.75, show.legend = c(size = TRUE, fill = FALSE)
   ) +
   geom_text(
     aes(label = n),
     colour = "white", size = 3.5, vjust = 0.5, show.legend = FALSE
   ) +
-  scale_fill_manual(
-    name   = "Vaccine",
-    values = fill_values,
-    guide  = guide_legend(override.aes = list(shape = 21, size = 6, colour = "black"))
-  ) +
+  scale_fill_manual(values = setNames(counts$vaccine_colour, counts$vaccine_name)) +
   scale_size_area(
     name     = "Count",
     max_size = 28,
@@ -83,11 +74,11 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = study_accession_un
     labels   = size_breaks_counts,
     guide    = guide_legend(override.aes = list(fill = "grey80", colour = "black"))
   ) +
-  scale_y_discrete(limits = rev(study_order)) +
+  scale_y_discrete(limits = rev(vaccine_order)) +
   labs(
     x     = "Days post-vaccination",
-    y     = "Study identifier",
-    title = "Participants with transcriptomic samples per study across time"
+    y     = "Vaccine",
+    title = "Participants with transcriptomic samples per vaccine across time"
   ) +
   theme_minimal(base_size = 18) +
   theme(
@@ -106,10 +97,10 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = study_accession_un
 print(bubble_plot)
 
 ggsave(
-  filename = "study_bubble_plot_sequential.pdf",
+  filename = "vaccine_bubble_plot.pdf",
   path     = descriptive_figures_folder,
   plot     = bubble_plot,
-  width    = 45, height = 40, units = "cm"
+  width    = 40, height = 25, units = "cm"
 )
 
 rm(list = ls())
