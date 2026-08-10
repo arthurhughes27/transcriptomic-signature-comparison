@@ -25,7 +25,7 @@ test_that("build_top_robust_table() returns the n highest-robustness rows, most 
   out <- build_top_robust_table(robustness_df, synthetic_genesets, n = 2)
 
   expect_equal(nrow(out), 2)
-  expect_equal(out$Robustness, formatC(c(0.9, 0.5), format = "e", digits = 2))
+  expect_equal(out$Robustness, c(0.9, 0.5))
   expect_true(out$`Gene set`[1] == "Gene set two description (gs2)")
   expect_equal(colnames(out), c("Gene set", "Vaccine", "Timepoint", "Robustness"))
 })

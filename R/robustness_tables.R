@@ -62,7 +62,11 @@ build_top_robust_table <- function(robustness_df, genesets, n = 20) {
       `Gene set`  = gs.label,
       `Vaccine`    = as.character(condition),
       `Timepoint`  = as.character(time),
-      `Robustness` = format_scientific(robustness)
+      # Raw notation (not scientific): the most-robust results are, by
+      # construction, close to 1, so unlike the significant-but-non-robust
+      # table there's no risk of a tiny value collapsing to a misleading
+      # "0" here.
+      `Robustness` = round(robustness, 3)
     )
 }
 
