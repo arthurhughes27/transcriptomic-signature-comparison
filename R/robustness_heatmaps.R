@@ -199,9 +199,14 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
     robustness_heatmap_layers(low_colour, high_colour, times = plot_data$time) +
     ggplot2::labs(x = "Vaccine", y = NULL, title = "Signal-robustness by gene set") +
-    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8),
-                   axis.title.x = ggplot2::element_text(size = 20),
-                   plot.title = ggplot2::element_text(size = 20))
+    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 13),
+                   axis.title.x = ggplot2::element_text(size = 25),
+                   axis.title.y = ggplot2::element_text(size = 25),
+                   plot.title = ggplot2::element_text(size = 25),
+                   axis.text.x = ggplot2::element_text(size = 15),
+                   legend.title = ggplot2::element_text(size = 18),
+                   legend.text = ggplot2::element_text(size = 15),
+                  )
 
   patchwork::wrap_plots(p_strip, p_main, ncol = 2, widths = c(strip_width, 20), guides = "collect")
 }
