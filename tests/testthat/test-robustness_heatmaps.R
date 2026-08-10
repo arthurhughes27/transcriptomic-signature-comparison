@@ -1,15 +1,17 @@
-test_that("join_geneset_aggregates() attaches gs.aggregate by gs.name", {
+test_that("join_geneset_aggregates() attaches gs.aggregate and gs.label by gs.name", {
   robustness_df <- tibble::tibble(gs.name = c("gs1", "gs2", "gs3"), robustness = c(0.1, 0.5, 0.9))
   genesets <- list(
-    geneset.names      = c("gs1", "gs2", "gs3"),
-    geneset.aggregates = factor(c("A", "B", "A"), levels = c("A", "B", "C"))
+    geneset.names              = c("gs1", "gs2", "gs3"),
+    geneset.aggregates          = factor(c("A", "B", "A"), levels = c("A", "B", "C")),
+    geneset.names.descriptions = c("Gene set one", "Gene set two", "Gene set three")
   )
 
   out <- join_geneset_aggregates(robustness_df, genesets)
 
-  expect_true("gs.aggregate" %in% colnames(out))
+  expect_true(all(c("gs.aggregate", "gs.label") %in% colnames(out)))
   expect_equal(as.character(out$gs.aggregate), c("A", "B", "A"))
   expect_equal(levels(out$gs.aggregate), c("A", "B", "C"))
+  expect_equal(out$gs.label, c("Gene set one", "Gene set two", "Gene set three"))
 })
 
 test_that("order_robustness_comparisons() orders condition/time and appends unrecognised conditions with a warning", {
@@ -65,6 +67,7 @@ test_that("plot_robustness_heatmap_aggregate() returns a ggplot without erroring
   p <- plot_robustness_heatmap_aggregate(robustness_df, conditions_order = c("Vaccine A", "Vaccine B"))
 
   expect_s3_class(p, "ggplot")
+  expect_equal(p$labels$title, "Mean signal-robustness by gene-set aggregate")
 })
 
 test_that("plot_robustness_heatmap_genesets() returns a single-page list by default and drops always-null gene sets", {
@@ -79,7 +82,8 @@ test_that("plot_robustness_heatmap_genesets() returns a single-page list by defa
   ) |>
     dplyr::mutate(
       gs.aggregate = factor(dplyr::if_else(gs.name %in% c("gs1", "gs2"), "A", "B"), levels = c("A", "B")),
-      robustness    = ifelse(gs.name == "gs3", 0, 0.5)  # gs3 is always null
+      gs.label      = gs.name,
+      robustness     = ifelse(gs.name == "gs3", 0, 0.5)  # gs3 is always null
     )
 
   expect_message(
@@ -108,7 +112,8 @@ test_that("plot_robustness_heatmap_genesets() keeps all gene sets when drop_null
   ) |>
     dplyr::mutate(
       gs.aggregate = factor("A", levels = "A"),
-      robustness    = 0
+      gs.label      = gs.name,
+      robustness     = 0
     )
 
   pages <- plot_robustness_heatmap_genesets(
@@ -134,7 +139,8 @@ test_that("plot_robustness_heatmap_genesets() splits gene sets across pages when
   ) |>
     dplyr::mutate(
       gs.aggregate = factor("A", levels = "A"),
-      robustness    = 0.5
+      gs.label      = gs.name,
+      robustness     = 0.5
     )
 
   pages <- plot_robustness_heatmap_genesets(
@@ -160,7 +166,8 @@ test_that("plot_robustness_heatmap_genesets() rows_per_page = Inf gives a single
   ) |>
     dplyr::mutate(
       gs.aggregate = factor("A", levels = "A"),
-      robustness    = 0.5
+      gs.label      = gs.name,
+      robustness     = 0.5
     )
 
   pages <- plot_robustness_heatmap_genesets(
@@ -171,4 +178,57 @@ test_that("plot_robustness_heatmap_genesets() rows_per_page = Inf gives a single
   )
 
   expect_length(pages, 1)
+})
+
+test_that("plot_robustness_heatmap_genesets() displays the full gs.label, not the short gs.name", {
+  testthat::skip_if_not_installed("patchwork")
+  testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = c("gs1", "gs2"),
+    condition = "Vaccine A",
+    time      = 1
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor("A", levels = "A"),
+      gs.label      = c("Full description one", "Full description two")[match(gs.name, c("gs1", "gs2"))],
+      robustness     = 0.5
+    )
+
+  pages <- plot_robustness_heatmap_genesets(
+    robustness_df, conditions_order = "Vaccine A", aggregate_colors = "#111111"
+  )
+
+  p_main <- pages[[1]][[2]]
+  expect_setequal(as.character(p_main$data$gs.label), c("Full description one", "Full description two"))
+  expect_false(any(c("gs1", "gs2") %in% as.character(p_main$data$gs.label)))
+})
+
+test_that("plot_robustness_heatmap_genesets() keeps the aggregate legend identical across pages", {
+  testthat::skip_if_not_installed("patchwork")
+  testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = paste0("gs", 1:4),
+    condition = "Vaccine A",
+    time      = 1
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor(c("A", "A", "B", "B")[match(gs.name, paste0("gs", 1:4))], levels = c("A", "B")),
+      gs.label      = gs.name,
+      robustness     = 0.5
+    )
+
+  pages <- plot_robustness_heatmap_genesets(
+    robustness_df,
+    conditions_order = "Vaccine A", aggregate_colors = c("#111111", "#222222"),
+    rows_per_page = 2
+  )
+
+  # Page 2 (gs3, gs4) only has aggregate "B" gene sets, but its legend
+  # should still list both aggregates, matching page 1.
+  strip_scale_page2 <- ggplot2::layer_scales(pages[[2]][[1]])$fill
+  expect_equal(strip_scale_page2$get_limits(), c("A", "B"))
 })

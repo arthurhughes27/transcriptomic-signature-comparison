@@ -10,7 +10,10 @@
 # With 258 gene sets, the gene-set-level heatmap is paginated (ROWS_PER_PAGE
 # below) into a single multi-page PDF (save_multi_page_pdf(),
 # R/plot_helpers.R) rather than one very tall page, so every page is a
-# normal, consistently-sized page instead of requiring heavy zooming.
+# normal, consistently-sized page instead of requiring heavy zooming. Pages
+# are sized to A4 landscape (GENESET_PAGE_WIDTH_CM/HEIGHT_CM below) with
+# ROWS_PER_PAGE calibrated so 45 gene sets - full names/descriptions,
+# readable at the row height that implies - fill exactly one page.
 #
 # Safe to run against partial results (e.g. while
 # 02_run_raw_specifications.R / 03_apply_posthoc_and_robustness.R are still
@@ -47,6 +50,11 @@ fs::dir_create(out_dir)
 
 ROWS_PER_PAGE <- 45
 
+# A4 landscape (cm) - gives 45 gene sets (with full names/descriptions) a
+# readable row height of ~4.7mm on one page.
+GENESET_PAGE_WIDTH_CM  <- 29.7
+GENESET_PAGE_HEIGHT_CM <- 21
+
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 BTM                 <- readRDS(p_data_btm)
@@ -73,7 +81,7 @@ p_genesets_pages <- plot_robustness_heatmap_genesets(robustness_annotated, rows_
 
 save_multi_page_pdf(
   p_genesets_pages, path = p_fig_genesets,
-  width = 35 / 2.54, height = 20 / 2.54
+  width = GENESET_PAGE_WIDTH_CM / 2.54, height = GENESET_PAGE_HEIGHT_CM / 2.54
 )
 message(sprintf(
   "Saved gene-set-level robustness heatmap (%d pages) to: %s",

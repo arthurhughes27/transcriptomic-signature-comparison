@@ -53,7 +53,7 @@ plot_robustness_violin <- function(robustness_df,
     ) +
     ggplot2::labs(
       x     = "Vaccine",
-      y     = "Robustness",
-      title = "Distribution of robustness across gene sets, by comparison"
+      y     = "Signal-robustness",
+      title = "Distribution of signal-robustness across gene sets, by comparison"
     )
 }

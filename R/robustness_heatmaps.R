@@ -27,14 +27,19 @@ power_trans <- function(power = 0.5) {
 #' @param robustness_df Tibble with a `gs.name` column, as returned by
 #'   [compute_robustness_metric()].
 #' @param genesets Gene set list (as in data/BTM_processed.rds /
-#'   data/BG3M_processed.rds), with `geneset.names` and `geneset.aggregates`.
+#'   data/BG3M_processed.rds), with `geneset.names`, `geneset.aggregates`,
+#'   and `geneset.names.descriptions`.
 #'
-#' @return `robustness_df` with a `gs.aggregate` column added, matched by
-#'   `gs.name`, retaining `genesets$geneset.aggregates`'s factor levels/order.
+#' @return `robustness_df` with `gs.aggregate` and `gs.label` columns
+#'   added, matched by `gs.name`: `gs.aggregate` retains
+#'   `genesets$geneset.aggregates`'s factor levels/order, and `gs.label`
+#'   is the full `geneset.names.descriptions` entry (used for display -
+#'   `gs.name` remains the short, unique join/sort key).
 join_geneset_aggregates <- function(robustness_df, genesets) {
   aggregate_lookup <- tibble::tibble(
     gs.name      = genesets$geneset.names,
-    gs.aggregate = genesets$geneset.aggregates
+    gs.aggregate = genesets$geneset.aggregates,
+    gs.label     = genesets$geneset.names.descriptions
   )
   dplyr::left_join(robustness_df, aggregate_lookup, by = "gs.name")
 }
@@ -105,7 +110,7 @@ robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors
       strip = day_facet_strip(times, day_colors)
     ),
     ggplot2::scale_fill_gradient(
-      name = "Robustness",
+      name = "Signal-robustness",
       low = low_colour,
       high = high_colour,
       limits = c(0, 1),
@@ -148,13 +153,13 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
     ggplot2::geom_tile(colour = "grey85") +
     ggplot2::scale_y_discrete(limits = rev(agg_levels)) +
     robustness_heatmap_layers(low_colour, high_colour, times = plot_data$time) + ggplot2::scale_fill_gradient(
-      name = "Mean robustness",
+      name = "Mean signal-robustness",
       low = low_colour,
       high = high_colour,
       limits = c(0, 1),
       trans = power_trans(0.5)
     ) +
-    ggplot2::labs(x = "Vaccine", y = "Gene set aggregate", title = "Mean robustness by gene-set aggregate") + 
+    ggplot2::labs(x = "Vaccine", y = "Gene set aggregate", title = "Mean signal-robustness by gene-set aggregate") +
     theme(axis.title = element_text(size = 20),
           plot.title = element_text(size = 20))
 }
@@ -162,9 +167,14 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
 #' Build one page of the gene-set-level robustness heatmap
 #'
 #' @param plot_data Rows for this page only (already filtered).
-#' @param gene_set_order This page's gene sets, in display order.
+#' @param gene_set_order This page's gene sets (full `gs.label` names), in
+#'   display order.
 #' @param aggregate_colour_map Named aggregate -> colour vector, shared
-#'   across every page so a given aggregate's colour is consistent.
+#'   across every page so a given aggregate's colour - and the full set of
+#'   legend entries - are identical on every page, whether or not that
+#'   aggregate has any gene sets on this particular page (`limits =
+#'   names(aggregate_colour_map)` forces every page's legend to list all
+#'   of them, not just the ones actually present).
 #' @param low_colour,high_colour,strip_width See
 #'   [plot_robustness_heatmap_genesets()].
 #'
@@ -173,20 +183,23 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
 #' @keywords internal
 build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colour_map,
                                        low_colour, high_colour, strip_width) {
-  annotation_data <- dplyr::distinct(plot_data, gs.name, gs.aggregate)
+  annotation_data <- dplyr::distinct(plot_data, gs.label, gs.aggregate)
 
-  p_strip <- ggplot2::ggplot(annotation_data, ggplot2::aes(x = 1, y = gs.name, fill = gs.aggregate)) +
+  p_strip <- ggplot2::ggplot(annotation_data, ggplot2::aes(x = 1, y = gs.label, fill = gs.aggregate)) +
     ggplot2::geom_tile() +
-    ggplot2::scale_fill_manual(name = "Aggregate", values = aggregate_colour_map, drop = FALSE) +
+    ggplot2::scale_fill_manual(
+      name = "Aggregate", values = aggregate_colour_map,
+      limits = names(aggregate_colour_map), drop = FALSE
+    ) +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
     ggplot2::theme_void()
 
-  p_main <- ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.name, fill = robustness)) +
+  p_main <- ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.label, fill = robustness)) +
     ggplot2::geom_tile() +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
     robustness_heatmap_layers(low_colour, high_colour, times = plot_data$time) +
-    ggplot2::labs(x = "Vaccine", y = NULL, title = "Robustness by gene set") +
-    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 6),
+    ggplot2::labs(x = "Vaccine", y = NULL, title = "Signal-robustness by gene set") +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 8),
                    axis.title.x = ggplot2::element_text(size = 20),
                    plot.title = ggplot2::element_text(size = 20))
 
@@ -197,11 +210,15 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
 #' paginated
 #'
 #' Same comparison layout as [plot_robustness_heatmap_aggregate()], but with
-#' one row per gene set instead of per aggregate: rows are grouped by
-#' aggregate (existing BTM factor order), then sorted alphabetically by gene
-#' set within an aggregate. A colour strip to the left of each page shows
-#' each row's aggregate, using [default_aggregate_colors()] (the same
-#' palette used for the circos plots).
+#' one row per gene set instead of per aggregate: rows are labelled with the
+#' full gene-set name/description (`gs.label`, from
+#' [join_geneset_aggregates()]), grouped by aggregate (existing BTM factor
+#' order), then sorted alphabetically by that full name within an
+#' aggregate. A colour strip to the left of each page shows each row's
+#' aggregate, using [default_aggregate_colors()] (the same palette used for
+#' the circos plots) - every page's aggregate legend lists all aggregates
+#' present anywhere in the data (not just this page's), so the legend is
+#' identical across pages.
 #'
 #' With 258 gene sets, a single figure at a readable row height doesn't fit
 #' on a page/screen without heavy zooming, so gene sets are split across
@@ -210,7 +227,10 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
 #' since an aggregate can straddle a page boundary). Every page uses the
 #' same row height and the same comparison columns, so pages are directly
 #' comparable and consistently sized regardless of how large the aggregate
-#' they happen to fall in is. Save the result with [save_multi_page_pdf()].
+#' they happen to fall in is. Save the result with [save_multi_page_pdf()] -
+#' the driver script (04_specification_heatmaps.R) pairs the default
+#' `rows_per_page` with an A4 page size so each page prints at a readable
+#' row height.
 #'
 #' @param robustness_df Output of [join_geneset_aggregates()].
 #' @param conditions_order Vaccine ordering (see [default_conditions_order()]).
@@ -255,12 +275,12 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
   }
 
   gene_set_order <- plot_data |>
-    dplyr::distinct(gs.name, gs.aggregate) |>
-    dplyr::arrange(gs.aggregate, gs.name) |>
-    dplyr::pull(gs.name) |>
+    dplyr::distinct(gs.label, gs.aggregate) |>
+    dplyr::arrange(gs.aggregate, gs.label) |>
+    dplyr::pull(gs.label) |>
     as.character()
 
-  plot_data <- dplyr::mutate(plot_data, gs.name = factor(as.character(gs.name), levels = gene_set_order))
+  plot_data <- dplyr::mutate(plot_data, gs.label = factor(as.character(gs.label), levels = gene_set_order))
 
   aggregate_levels     <- levels(plot_data$gs.aggregate)
   aggregate_colour_map <- assign_colours(aggregate_levels, aggregate_colors, palette = "Spectral")
@@ -273,7 +293,7 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
 
   lapply(page_gene_sets, function(gene_sets_on_page) {
     build_geneset_heatmap_page(
-      plot_data             = dplyr::filter(plot_data, as.character(gs.name) %in% gene_sets_on_page),
+      plot_data             = dplyr::filter(plot_data, as.character(gs.label) %in% gene_sets_on_page),
       gene_set_order         = gene_sets_on_page,
       aggregate_colour_map    = aggregate_colour_map,
       low_colour               = low_colour,
