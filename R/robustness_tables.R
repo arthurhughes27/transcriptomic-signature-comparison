@@ -12,6 +12,21 @@
 # ready to \input{} directly into the thesis.
 # =============================================================================
 
+#' Format a numeric vector in scientific notation with 3 significant figures
+#'
+#' Used for the `Robustness` column instead of simple rounding: robustness
+#' values can be very small (e.g. a gene set significant under only 1 of
+#' several thousand post-hoc specifications) while still corresponding to
+#' a significant baseline p-value, and `round(x, 3)` collapses those to a
+#' misleading `0`.
+#'
+#' @param x Numeric vector.
+#'
+#' @return Character vector, e.g. `0.0005678` -> `"5.68e-04"`.
+format_scientific <- function(x) {
+  formatC(x, format = "e", digits = 2)
+}
+
 #' Attach full gene-set name/description labels to a robustness-like table
 #'
 #' @param df Tibble with a `gs.name` column.
@@ -47,24 +62,23 @@ build_top_robust_table <- function(robustness_df, genesets, n = 20) {
       `Gene set`  = gs.label,
       `Vaccine`    = as.character(condition),
       `Timepoint`  = as.character(time),
-      `Robustness` = round(robustness, 3)
+      `Robustness` = format_scientific(robustness)
     )
 }
 
 #' Build the "significant at baseline but not robust" table
 #'
 #' Gene set x comparison x method results that were called significant at
-#' the baseline specification (see [join_robustness_baseline()] /
-#' [plot_robustness_vs_baseline()]) but have robustness below
-#' `robustness_threshold` - the cases where the original conclusion is most
-#' sensitive to analytical choices.
+#' the baseline specification (see [join_robustness_baseline()]) but have
+#' robustness below `robustness_threshold` - the cases where the original
+#' conclusion is most sensitive to analytical choices.
 #'
 #' @param robustness_df Output of [compute_robustness_metric()].
 #' @param baseline_df One or more methods' baseline-specification results,
 #'   see [join_robustness_baseline()].
 #' @param genesets Gene set list, see [attach_geneset_full_names()].
-#' @param pval_col,alpha Baseline significance definition, as in
-#'   [plot_robustness_vs_baseline()].
+#' @param pval_col,alpha Baseline significance definition (adjusted
+#'   p-value column and threshold).
 #' @param robustness_threshold Rows with `robustness < robustness_threshold`
 #'   are included (ordered least robust first).
 #' @param n Optional cap on the number of rows kept (NULL keeps all
@@ -96,7 +110,7 @@ build_significant_nonrobust_table <- function(robustness_df, baseline_df, genese
       `Timepoint`         = as.character(time),
       `Method`            = method,
       `Baseline p-value` = formatC(.data[[pval_col]], format = "e", digits = 2),
-      `Robustness`        = round(robustness, 3)
+      `Robustness`        = format_scientific(robustness)
     )
 }
 

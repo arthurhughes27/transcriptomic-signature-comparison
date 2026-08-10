@@ -10,11 +10,11 @@
 # and per vaccine x timepoint comparison.
 #
 # Baseline results are read from the raw specification-grid outputs
-# (R/baseline_results.R), not from separately-run analysis/reanalysis/
-# dearseq_dgsa.R / qusage_dgsa.R results: the latter are a distinct run of
-# the same specification and were found not to reproduce identically
-# (gene sets baseline-significant here but with zero robustness in the
-# specification analysis, which is impossible if this were the same run).
+# (R/baseline_results.R), not from a separately-run baseline-only driver:
+# an earlier standalone version of this baseline run was found not to
+# reproduce identically (gene sets baseline-significant there but with
+# zero robustness in the specification analysis, which is impossible if
+# it were the same run), so it was removed as redundant.
 # Requires 01_build_specification_grid.R and 02_run_raw_specifications.R
 # (analysis/specification_analysis/) to have been run first.
 # =============================================================================

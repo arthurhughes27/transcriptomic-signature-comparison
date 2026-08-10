@@ -2,7 +2,7 @@
 # DGSA heatmap comparison: dearseq vs QuSAGE
 # =============================================================================
 # ComplexHeatmap comparison of the two methods' baseline results, analogous
-# to the circos plots (plot_circos.R): mean fold-change per gene set x
+# to the circos plots (02_plot_circos.R): mean fold-change per gene set x
 # vaccine, split into column panels by timepoint, asterisk-annotated where
 # significant, row strip coloured by gene-set aggregate.
 #
@@ -24,12 +24,11 @@
 #
 # Baseline results are read from the raw specification-grid outputs
 # (R/baseline_results.R) - the same reproducible source used by every
-# other baseline-dependent script (dgsa_comparison_example.R,
-# plot_circos.R, plot_baseline_significance_comparison.R,
-# 05_robustness_vs_baseline.R, 07_robustness_tables.R) - rather than the
-# original script's output/results/{dearseq,qusage}/*_processed.rds paths,
-# which don't exist in this repository's layout and are the separately-run
-# baseline scripts already found not to reproduce identically.
+# other baseline-dependent script (01_dgsa_comparison_example.R,
+# 02_plot_circos.R, 04_plot_baseline_significance_comparison.R,
+# analysis/specification_analysis/06_robustness_tables.R) - rather than
+# the original script's output/results/{dearseq,qusage}/*_processed.rds
+# paths, which don't exist in this repository's layout.
 #
 # Requires analysis/specification_analysis/01_build_specification_grid.R
 # and 02_run_raw_specifications.R to have been run first.

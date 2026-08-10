@@ -82,3 +82,41 @@ test_that("load_baseline_results_from_raw() errors when raw_grid has no baseline
 
   expect_error(load_baseline_results_from_raw(raw_grid, tempfile(), genesets), "is_baseline")
 })
+
+test_that("join_robustness_baseline() keeps one row per gene set x comparison x method", {
+  robustness_df <- tibble::tibble(
+    gs.name   = c("gs1", "gs1", "gs2"),
+    condition = c("V1", "V1", "V1"),
+    time      = c(1, 1, 1),
+    robustness = c(0.2, 0.2, 0.8)
+  )
+  baseline_df <- tibble::tibble(
+    gs.name              = c("gs1", "gs1", "gs2"),
+    condition            = c("V1", "V1", "V1"),
+    time                 = c(1, 1, 1),
+    method               = c("dearseq", "qusage", "dearseq"),
+    global.adjPval_BH    = c(0.01, 0.2, 0.9)
+  )
+
+  out <- join_robustness_baseline(robustness_df, baseline_df)
+
+  expect_equal(nrow(out), 3)
+  expect_true(all(c("robustness", "method", "global.adjPval_BH") %in% colnames(out)))
+  expect_equal(out$robustness[out$gs.name == "gs1" & out$method == "dearseq"], 0.2)
+  expect_equal(out$robustness[out$gs.name == "gs1" & out$method == "qusage"], 0.2)
+})
+
+test_that("join_robustness_baseline() drops rows with no robustness match", {
+  robustness_df <- tibble::tibble(
+    gs.name = "gs1", condition = "V1", time = 1, robustness = 0.5
+  )
+  baseline_df <- tibble::tibble(
+    gs.name = c("gs1", "gs2"), condition = c("V1", "V1"), time = c(1, 1),
+    method = c("dearseq", "dearseq"), global.adjPval_BH = c(0.01, 0.02)
+  )
+
+  out <- join_robustness_baseline(robustness_df, baseline_df)
+
+  expect_equal(nrow(out), 1)
+  expect_equal(out$gs.name, "gs1")
+})

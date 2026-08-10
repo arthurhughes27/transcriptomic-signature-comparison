@@ -6,8 +6,9 @@
 # is_baseline == TRUE), already run and saved by
 # analysis/specification_analysis/02_run_raw_specifications.R as part of
 # the specification-analysis loop. Everything in the repository that needs
-# "the baseline result" (the Stage 1 dearseq-vs-QuSAGE comparison, Figure 3,
-# the robustness tables) should read it from there, rather than from a
+# "the baseline result" (the Stage 1 dearseq-vs-QuSAGE comparison, the
+# baseline significance comparison, the robustness tables) should read it
+# from there, rather than from a
 # separately-run baseline-only script (analysis/reanalysis/dearseq_dgsa.R /
 # qusage_dgsa.R) - the latter is a distinct run of the same specification
 # and is not guaranteed to reproduce identically (observed in practice:
@@ -64,4 +65,23 @@ load_baseline_results_from_raw <- function(raw_grid, raw_dir, genesets, conditio
       conditions_order = conditions_order, method = spec$method
     )
   })
+}
+
+#' Join robustness metrics onto baseline DGSA results
+#'
+#' @param robustness_df Output of [compute_robustness_metric()] (`gs.name`,
+#'   `condition`, `time`, `robustness`).
+#' @param baseline_df One or more methods' baseline-specification results
+#'   (e.g. [load_baseline_results_from_raw()]'s output), with `gs.name`,
+#'   `condition`, `time`, `method`, `rawPval`, and
+#'   `{scope}.adjPval_{method}` columns.
+#'
+#' @return An inner join of the two on `gs.name`/`condition`/`time`: one row
+#'   per gene set x comparison x method, with `robustness` alongside every
+#'   baseline column.
+join_robustness_baseline <- function(robustness_df, baseline_df) {
+  dplyr::inner_join(
+    baseline_df, robustness_df,
+    by = c("gs.name", "condition", "time")
+  )
 }
