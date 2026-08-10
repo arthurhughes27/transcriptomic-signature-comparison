@@ -9,8 +9,7 @@
 # their own file (output/results/specification_analysis/raw/{spec_label}.rds),
 # and comparisons already present in that file are skipped - so an
 # interrupted run resumes rather than restarts, both across specifications
-# and within one (matching the pattern used by dearseq_dgsa.R /
-# qusage_dgsa.R).
+# and within one.
 #
 # THIS IS THE EXPENSIVE STEP: 66 specifications x every valid comparison,
 # many involving dearseq's permutation test (1000 permutations for small

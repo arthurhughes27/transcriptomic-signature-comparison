@@ -6,9 +6,7 @@
 #
 # Baseline results are read from the raw specification-grid outputs
 # (R/baseline_results.R) - the same is_baseline == TRUE runs the robustness
-# metric itself is accumulated from - rather than from separately-run
-# analysis/reanalysis/dearseq_dgsa.R / qusage_dgsa.R results, which are not
-# guaranteed to reproduce identically. Requires
+# metric itself is accumulated from. Requires
 # analysis/specification_analysis/01_build_specification_grid.R and
 # 02_run_raw_specifications.R to have been run first.
 # =============================================================================

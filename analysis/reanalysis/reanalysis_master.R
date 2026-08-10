@@ -1,30 +1,22 @@
 # Master script to run all scripts in the "reanalysis" section
-
-# Baseline dearseq specification
-source(fs::path("analysis", "reanalysis", "dearseq_dgsa.R"))
-source(fs::path("analysis", "reanalysis", "process_dearseq_dgsa_results.R"))
-
-# Baseline QuSAGE specification
-source(fs::path("analysis", "reanalysis", "qusage_dgsa.R"))
-source(fs::path("analysis", "reanalysis", "process_qusage_dgsa_results.R"))
+#
+# All four scripts read baseline results from the specification-analysis
+# raw output (R/baseline_results.R::load_baseline_results_from_raw()), so
+# analysis/specification_analysis/01_build_specification_grid.R and
+# 02_run_raw_specifications.R must already have been run first. The
+# earlier standalone dearseq_dgsa.R / qusage_dgsa.R baseline-only driver
+# scripts (and their process_*_dgsa_results.R post-processors) have been
+# removed as redundant: 02_run_raw_specifications.R's raw specification
+# grid already includes both methods' baseline specifications.
 
 # Stage 1: dearseq vs QuSAGE baseline comparison
-# Reads baseline results from the specification-analysis raw output (see
-# R/baseline_results.R), so analysis/specification_analysis/01_build_specification_grid.R
-# and 02_run_raw_specifications.R must already have been run.
-source(fs::path("analysis", "reanalysis", "dgsa_comparison_example.R"))
+source(fs::path("analysis", "reanalysis", "01_dgsa_comparison_example.R"))
 
 # Circos plots comparing the two methods
-# Also reads baseline results from the specification-analysis raw output
-# (see R/baseline_results.R) - same prerequisite as above.
-source(fs::path("analysis", "reanalysis", "plot_circos.R"))
+source(fs::path("analysis", "reanalysis", "02_plot_circos.R"))
 
 # Heatmap comparison of the two methods
-# Also reads baseline results from the specification-analysis raw output
-# (see R/baseline_results.R) - same prerequisite as above.
-source(fs::path("analysis", "reanalysis", "plot_heatmap_comparison.R"))
+source(fs::path("analysis", "reanalysis", "03_plot_heatmap_comparison.R"))
 
 # Baseline significance comparison (percentage significant, dearseq vs QuSAGE)
-# Also reads baseline results from the specification-analysis raw output
-# (see R/baseline_results.R) - same prerequisite as above.
-source(fs::path("analysis", "reanalysis", "plot_baseline_significance_comparison.R"))
+source(fs::path("analysis", "reanalysis", "04_plot_baseline_significance_comparison.R"))

@@ -5,8 +5,7 @@
 # - moves results, using the baseline specification only (not the full
 # robustness grid): for each vaccine x timepoint comparison and method,
 # the percentage of gene sets called significant at baseline (withinTime
-# BH-adjusted p <= 0.05, matching the convention used elsewhere - see
-# R/robustness_baseline_plots.R). Two dodged bars (dearseq/qusage) per
+# BH-adjusted p <= 0.05 by default). Two dodged bars (dearseq/qusage) per
 # vaccine, faceted by timepoint - same x-axis layout convention as
 # R/robustness_heatmaps.R (order_robustness_comparisons()).
 # =============================================================================
@@ -25,8 +24,7 @@
 #'   `method`, and `pval_col`.
 #' @param pval_col Adjusted p-value column defining significance (see
 #'   [apply_pvalue_adjustments()] for naming). Defaults to the same
-#'   `withinTime.adjPval_BH` convention used for Figure 3 / the robustness
-#'   tables.
+#'   `withinTime.adjPval_BH` convention used by the robustness tables.
 #' @param alpha Significance threshold applied to `pval_col`.
 #'
 #' @return A tibble with one row per comparison x method: `condition`,

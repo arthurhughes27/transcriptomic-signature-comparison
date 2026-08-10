@@ -1,5 +1,5 @@
 # =============================================================================
-# Specification analysis — 07: robustness summary tables
+# Specification analysis — 06: robustness summary tables
 # =============================================================================
 # Two LaTeX-ready tables summarising the robustness metric pi_{g,v,j}
 # (output/results/specification_analysis/robustness_metrics.rds):
@@ -14,9 +14,14 @@
 #
 # Baseline results are read directly from the raw specification-grid
 # outputs (R/baseline_results.R) - the same runs the robustness metric
-# itself is accumulated from - rather than from separately-run
-# analysis/reanalysis/dearseq_dgsa.R / qusage_dgsa.R results, which are not
-# guaranteed to reproduce identically.
+# itself is accumulated from, so baseline significance and robustness can
+# never disagree about which specifications were actually run.
+#
+# Robustness values are reported in scientific notation (3 significant
+# figures) rather than rounded to 3 decimal places: a gene set can be
+# significant under only a handful of the thousands of post-hoc
+# specifications, giving a robustness far below 0.001 that rounding would
+# otherwise display as a misleading "0".
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────

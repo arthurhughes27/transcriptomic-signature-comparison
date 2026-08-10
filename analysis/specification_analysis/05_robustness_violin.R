@@ -1,5 +1,5 @@
 # =============================================================================
-# Specification analysis — 06: robustness distribution violin plot (Figure 4)
+# Specification analysis — 05: robustness distribution violin plot (Figure 4)
 # =============================================================================
 # Shows the full distribution of robustness across the 258 gene sets for
 # each comparison (output/results/specification_analysis/

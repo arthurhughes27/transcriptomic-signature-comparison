@@ -25,7 +25,7 @@ test_that("build_top_robust_table() returns the n highest-robustness rows, most 
   out <- build_top_robust_table(robustness_df, synthetic_genesets, n = 2)
 
   expect_equal(nrow(out), 2)
-  expect_equal(out$Robustness, c(0.9, 0.5))
+  expect_equal(out$Robustness, formatC(c(0.9, 0.5), format = "e", digits = 2))
   expect_true(out$`Gene set`[1] == "Gene set two description (gs2)")
   expect_equal(colnames(out), c("Gene set", "Vaccine", "Timepoint", "Robustness"))
 })
@@ -52,7 +52,7 @@ test_that("build_significant_nonrobust_table() filters to significant-but-non-ro
 
   expect_equal(nrow(out), 1)
   expect_equal(out$`Gene set`, "Gene set one description (gs1)")
-  expect_equal(out$Robustness, 0.1)
+  expect_equal(out$Robustness, formatC(0.1, format = "e", digits = 2))
   expect_equal(out$`Baseline p-value`, formatC(0.001, format = "e", digits = 2))
   expect_equal(colnames(out), c("Gene set", "Vaccine", "Timepoint", "Method", "Baseline p-value", "Robustness"))
 })
@@ -78,7 +78,13 @@ test_that("build_significant_nonrobust_table() orders least robust first and res
   )
 
   expect_equal(nrow(out), 2)
-  expect_equal(out$Robustness, c(0.1, 0.3))
+  expect_equal(out$Robustness, formatC(c(0.1, 0.3), format = "e", digits = 2))
+})
+
+test_that("format_scientific() gives 3 significant figures, even for very small values", {
+  expect_equal(format_scientific(0.0005678), formatC(0.0005678, format = "e", digits = 2))
+  expect_equal(format_scientific(0.0005678), "5.68e-04")
+  expect_false(format_scientific(0.0005678) == "0")
 })
 
 test_that("save_latex_table() writes a .tex file containing booktabs markup and an optional .csv", {
