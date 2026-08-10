@@ -7,6 +7,11 @@
 # gene-set-level heatmap (supplementary figure) - see R/robustness_heatmaps.R
 # for the plotting functions themselves.
 #
+# With 258 gene sets, the gene-set-level heatmap is paginated (ROWS_PER_PAGE
+# below) into a single multi-page PDF (save_multi_page_pdf(),
+# R/plot_helpers.R) rather than one very tall page, so every page is a
+# normal, consistently-sized page instead of requiring heavy zooming.
+#
 # Safe to run against partial results (e.g. while
 # 02_run_raw_specifications.R / 03_apply_posthoc_and_robustness.R are still
 # producing more of the specification grid) - it just plots whatever is in
@@ -38,6 +43,10 @@ if (!fs::file_exists(p_metrics)) {
 
 fs::dir_create(out_dir)
 
+# ── Config ────────────────────────────────────────────────────────────────────
+
+ROWS_PER_PAGE <- 45
+
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 BTM                 <- readRDS(p_data_btm)
@@ -60,15 +69,15 @@ message("Saved aggregate-level robustness heatmap to: ", p_fig_aggregate)
 # SUPPLEMENTARY FIGURE — gene-set-level heatmap
 # =============================================================================
 
-p_genesets <- plot_robustness_heatmap_genesets(robustness_annotated)
+p_genesets_pages <- plot_robustness_heatmap_genesets(robustness_annotated, rows_per_page = ROWS_PER_PAGE)
 
-n_gene_sets_shown <- dplyr::n_distinct(robustness_annotated$gs.name)
-fig_height_cm     <- max(20, n_gene_sets_shown * 0.4)
-
-ggsave(
-  filename = p_fig_genesets, plot = p_genesets,
-  width = 35, height = fig_height_cm, units = "cm", limitsize = FALSE
+save_multi_page_pdf(
+  p_genesets_pages, path = p_fig_genesets,
+  width = 35 / 2.54, height = 20 / 2.54
 )
-message("Saved gene-set-level robustness heatmap to: ", p_fig_genesets)
+message(sprintf(
+  "Saved gene-set-level robustness heatmap (%d pages) to: %s",
+  length(p_genesets_pages), p_fig_genesets
+))
 
 rm(list = ls())

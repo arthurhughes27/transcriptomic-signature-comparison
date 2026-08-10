@@ -226,3 +226,25 @@ day_highlight_bands <- function(x_levels, highlight_days, day_colors = NULL, alp
     )
   })
 }
+
+#' Save a list of plots as consecutive pages of one PDF
+#'
+#' For any plot object with a `print()` method that draws to the current
+#' grid device (ggplot, patchwork, ...): opens a single multi-page PDF
+#' device and prints each plot to its own page, so a figure that's too
+#' long/wide for one page (e.g. a paginated heatmap - see
+#' [plot_robustness_heatmap_genesets()]) can still be delivered as one
+#' file, each page a normal, consistently-sized page rather than one
+#' oversized one requiring heavy zooming.
+#'
+#' @param plots List of plot objects, one per page.
+#' @param path Output PDF path.
+#' @param width,height PDF page size (inches).
+#'
+#' @return `path`, invisibly.
+save_multi_page_pdf <- function(plots, path, width, height) {
+  grDevices::pdf(path, width = width, height = height, onefile = TRUE)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  for (p in plots) print(p)
+  invisible(path)
+}
