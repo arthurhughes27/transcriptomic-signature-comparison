@@ -1,5 +1,6 @@
 test_that("plot_robustness_violin() returns a ggplot without erroring", {
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   set.seed(1)
   robustness_df <- tidyr::expand_grid(
@@ -16,6 +17,7 @@ test_that("plot_robustness_violin() returns a ggplot without erroring", {
 
 test_that("plot_robustness_violin() orders comparisons the same way as the heatmaps", {
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   robustness_df <- tidyr::expand_grid(
     gs.name   = paste0("gs", 1:3),
@@ -32,6 +34,7 @@ test_that("plot_robustness_violin() orders comparisons the same way as the heatm
 
 test_that("plot_robustness_violin() appends unrecognised conditions with a warning", {
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   robustness_df <- tibble::tibble(
     gs.name = c("gs1", "gs1"), condition = c("V1", "V3"), time = c(1, 1),

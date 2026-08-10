@@ -667,16 +667,24 @@ draw_circos_legend <- function(aggregates_name,
 
 # -----------------------------------------------------------------------------
 
-# Draw a bold row annotation label in the centre of an empty plot region,
-# or reserve blank space when placeholder = TRUE.
+# Draw a bold row annotation label (optionally on a light, day-coloured
+# background box - see R/plot_helpers.R's assign_day_colours(), so it's
+# clear at a glance where one day's row of circos plots ends and the next
+# begins) in the centre of an empty plot region, or reserve blank space
+# when placeholder = TRUE.
 plot_row_annotation <- function(label       = NULL,
                                 size        = 5,
-                                placeholder = FALSE) {
+                                placeholder = FALSE,
+                                fill_colour  = NULL) {
   par(mar = c(0, 0, 0, 0))
   plot(0, 0, type = "n", axes = FALSE, xlab = "", ylab = "",
        xlim = c(0, 1), ylim = c(0, 1))
-  if (!placeholder && !is.null(label))
+  if (!placeholder && !is.null(label)) {
+    if (!is.null(fill_colour)) {
+      rect(0.05, 0.3, 0.95, 0.7, col = fill_colour, border = NA)
+    }
     text(0.5, 0.5, label, cex = size, font = 2)
+  }
 }
 
 # =============================================================================
@@ -694,8 +702,9 @@ render_row <- function(day,
                        legend_placeholder,
                        legend_scale  = 1.3,
                        qusage_title  = NULL,
-                       dearseq_title = NULL) {
-  plot_row_annotation(paste0("Day ", day), size = 6)
+                       dearseq_title = NULL,
+                       day_colour     = NULL) {
+  plot_row_annotation(paste0("Day ", day), size = 6, fill_colour = day_colour)
   
   circos.clear()
   plot_circos_default(
@@ -723,41 +732,53 @@ render_row <- function(day,
   )
 }
 
+# Fixed day -> colour mapping shared by every circos PDF (single-day and
+# comparison alike), so a given day is highlighted with the same colour
+# regardless of which figure it appears in - see assign_day_colours()
+# (R/plot_helpers.R).
+circos_day_colours <- assign_day_colours(c(1, 3, 7))
+
 # Open a single-day PDF (1 row × 4 columns) and render one day
 render_single_day_pdf <- function(filename, day, arc) {
   pdf(fs::path(figures_folder, filename), width = 24, height = 9.5)
   on.exit(dev.off())
-  
+
   layout(matrix(1:4, nrow = 1), widths = c(0.1, 0.35, 0.35, 0.25))
   par(mar = rep(0, 4))
-  
+
   render_row(
     day                = day,
     arc                = arc,
     legend_placeholder = FALSE,
     legend_scale       = 1.3,
     qusage_title       = "QuSAGE",
-    dearseq_title      = "dearseq"
+    dearseq_title      = "dearseq",
+    day_colour          = circos_day_colours[[paste0("Day ", day)]]
   )
 }
 
-# Open a comparison PDF (3 rows × 4 columns) and render days 1, 3, 7.
+# Open a comparison PDF (3 rows × 4 columns) and render days 1, 3, 7, with
+# a blank spacer row between each day's row for visual separation.
 # The legend is shown on day 3 and blank on days 1 and 7.
 render_comparison_pdf <- function(filename, arc) {
-  pdf(fs::path(figures_folder, filename), width = 27, height = 25)
+  pdf(fs::path(figures_folder, filename), width = 27, height = 26)
   on.exit(dev.off())
-  
+
+  # 5 layout rows: day 1 / spacer / day 3 / spacer / day 7
   layout(
-    matrix(1:12, nrow = 3, byrow = TRUE),
+    matrix(c(1:4, rep(0, 4), 5:8, rep(0, 4), 9:12), nrow = 5, ncol = 4, byrow = TRUE),
     widths  = c(0.1, 0.35, 0.35, 0.35),
-    heights = c(0.33, 0.33, 0.33)
+    heights = c(0.33, 0.02, 0.33, 0.02, 0.33)
   )
   par(mar = rep(0, 4))
-  
+
   render_row(1, arc, legend_placeholder = TRUE,  legend_scale = 1.3,
-             qusage_title = "QuSAGE", dearseq_title = "dearseq")
-  render_row(3, arc, legend_placeholder = FALSE, legend_scale = 1.5)
-  render_row(7, arc, legend_placeholder = TRUE,  legend_scale = 1.3)
+             qusage_title = "QuSAGE", dearseq_title = "dearseq",
+             day_colour = circos_day_colours[["Day 1"]])
+  render_row(3, arc, legend_placeholder = FALSE, legend_scale = 1.5,
+             day_colour = circos_day_colours[["Day 3"]])
+  render_row(7, arc, legend_placeholder = TRUE,  legend_scale = 1.3,
+             day_colour = circos_day_colours[["Day 7"]])
 }
 
 # =============================================================================

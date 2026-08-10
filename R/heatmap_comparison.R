@@ -282,6 +282,12 @@ build_dgsa_heatmap <- function(df, full_results_df, score_col,
     levels = time_display_levels
   )
 
+  # Light, day-consistent colours behind each column-slice title (same
+  # palette as the ggplot2 figures' facet strips - see
+  # R/plot_helpers.R's assign_day_colours()), so it's clear at a glance
+  # where one timepoint's block of columns ends and the next begins.
+  day_title_colours <- assign_day_colours(time_order)[time_display_levels]
+
   colnames(mat) <- col_condition
 
   all_aggregates <- levels(full_results_df$gs.aggregate)
@@ -347,7 +353,7 @@ build_dgsa_heatmap <- function(df, full_results_df, score_col,
     mat,
     name                  = "Mean fold-change",
     col                   = col_fun,
-    column_gap            = grid::unit(5, "mm"),
+    column_gap            = grid::unit(8, "mm"),
     na_col                = "grey95",
     cluster_rows          = cluster_rows,
     show_row_dend         = show_row_dend,
@@ -355,6 +361,7 @@ build_dgsa_heatmap <- function(df, full_results_df, score_col,
     cluster_columns       = cluster_cols,
     column_split          = col_time_display,
     cluster_column_slices = FALSE,
+    column_title_gp       = grid::gpar(fill = unname(day_title_colours), fontface = "bold", fontsize = 12),
     show_column_dend      = TRUE,
     column_dend_side      = "top",
     column_dend_height    = grid::unit(2, "cm"),

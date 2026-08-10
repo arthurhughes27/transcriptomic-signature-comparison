@@ -49,6 +49,7 @@ test_that("summarise_robustness_by_aggregate() computes the unweighted mean per 
 
 test_that("plot_robustness_heatmap_aggregate() returns a ggplot without erroring", {
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   set.seed(1)
   robustness_df <- tidyr::expand_grid(
@@ -69,6 +70,7 @@ test_that("plot_robustness_heatmap_aggregate() returns a ggplot without erroring
 test_that("plot_robustness_heatmap_genesets() returns a patchwork object and drops always-null gene sets", {
   testthat::skip_if_not_installed("patchwork")
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   robustness_df <- tidyr::expand_grid(
     gs.name   = c("gs1", "gs2", "gs3"),
@@ -95,6 +97,7 @@ test_that("plot_robustness_heatmap_genesets() returns a patchwork object and dro
 test_that("plot_robustness_heatmap_genesets() keeps all gene sets when drop_null_gene_sets = FALSE", {
   testthat::skip_if_not_installed("patchwork")
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   robustness_df <- tidyr::expand_grid(
     gs.name   = c("gs1", "gs2"),

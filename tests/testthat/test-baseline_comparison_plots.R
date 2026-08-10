@@ -39,6 +39,7 @@ test_that("compute_pct_significant_by_comparison() errors when pval_col is missi
 
 test_that("plot_baseline_significance_comparison() returns a ggplot with bars matching pct_significant", {
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   pct_df <- tibble::tibble(
     condition        = c("Vaccine A", "Vaccine A", "Vaccine B", "Vaccine B"),
@@ -59,6 +60,7 @@ test_that("plot_baseline_significance_comparison() returns a ggplot with bars ma
 
 test_that("plot_baseline_significance_comparison() can suppress value labels", {
   testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
 
   pct_df <- tibble::tibble(
     condition = "Vaccine A", time = 1, method = c("dearseq", "qusage"),
