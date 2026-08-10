@@ -13,6 +13,8 @@ test_that("plot_robustness_violin() returns a ggplot without erroring", {
   p <- plot_robustness_violin(robustness_df, conditions_order = c("Vaccine A", "Vaccine B"))
 
   expect_s3_class(p, "ggplot")
+  expect_equal(p$labels$y, "Signal-robustness")
+  expect_equal(p$labels$title, "Distribution of signal-robustness across gene sets, by comparison")
 })
 
 test_that("plot_robustness_violin() orders comparisons the same way as the heatmaps", {
