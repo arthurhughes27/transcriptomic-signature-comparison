@@ -58,7 +58,7 @@ pct_significant <- compute_pct_significant_by_comparison(baseline_results)
 
 p_comparison <- plot_baseline_significance_comparison(pct_significant)
 
-ggsave(filename = p_fig, plot = p_comparison, width = 35, height = 15, units = "cm")
+ggsave(filename = p_fig, plot = p_comparison, width = 35, height = 12, units = "cm")
 message("Saved baseline significance comparison figure to: ", p_fig)
 
-rm(list = ls())
+# rm(list = ls())
