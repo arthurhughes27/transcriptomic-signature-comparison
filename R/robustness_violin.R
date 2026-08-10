@@ -8,7 +8,8 @@
 # timepoint (so where timepoints change is unambiguous) and ordered within
 # each facet by vaccine (default_conditions_order()) - reuses
 # order_robustness_comparisons() from that file so the two figures' column
-# ordering can never drift apart.
+# ordering can never drift apart. Each day's panel gets a black outline
+# (panel.border) to further separate the day blocks visually.
 # =============================================================================
 
 #' Plot the distribution of per-gene-set robustness for each comparison
@@ -45,9 +46,10 @@ plot_robustness_violin <- function(robustness_df,
     ggplot2::theme_minimal() +
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
-      strip.text         = ggplot2::element_text(face = "bold", size = 12),
-      panel.spacing.x     = grid::unit(14, "pt"),
-      axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1),
+      panel.border       = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
+      strip.text          = ggplot2::element_text(face = "bold", size = 12),
+      panel.spacing.x      = grid::unit(14, "pt"),
+      axis.text.x          = ggplot2::element_text(angle = 45, hjust = 1),
       axis.title = element_text(size = 20),
       plot.title = element_text(size = 20)
     ) +

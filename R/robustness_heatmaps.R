@@ -101,7 +101,8 @@ summarise_robustness_by_aggregate <- function(robustness_df) {
 # Facet strips are coloured per day (assign_day_colours()/day_facet_strip(),
 # R/plot_helpers.R) via ggh4x::facet_grid2(), so it's easy to tell at a
 # glance where one timepoint's block of columns ends and the next begins;
-# panel.spacing.x is widened to the same end.
+# panel.spacing.x is widened and each day's panel gets a black outline
+# (panel.border) to the same end.
 robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors = NULL) {
   list(
     ggh4x::facet_grid2(
@@ -119,6 +120,7 @@ robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors
     ggplot2::theme_minimal(),
     ggplot2::theme(
       panel.grid       = ggplot2::element_blank(),
+      panel.border     = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
       strip.text        = ggplot2::element_text(face = "bold", size = 12),
       panel.spacing.x    = grid::unit(14, "pt"),
       axis.text.x        = ggplot2::element_text(angle = 45, hjust = 1)

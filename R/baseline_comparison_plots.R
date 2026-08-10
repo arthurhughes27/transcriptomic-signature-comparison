@@ -7,7 +7,9 @@
 # the percentage of gene sets called significant at baseline (withinTime
 # BH-adjusted p <= 0.05 by default). Two dodged bars (dearseq/qusage) per
 # vaccine, faceted by timepoint - same x-axis layout convention as
-# R/robustness_heatmaps.R (order_robustness_comparisons()).
+# R/robustness_heatmaps.R (order_robustness_comparisons()). Each day's
+# panel gets a black outline (panel.border) to further separate the day
+# blocks visually.
 # =============================================================================
 
 #' Compute the percentage of gene sets significant at baseline, per
@@ -79,9 +81,10 @@ plot_baseline_significance_comparison <- function(pct_df,
     ggplot2::theme_minimal() +
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
-      strip.text         = ggplot2::element_text(face = "bold", size = 14),
-      panel.spacing.x     = grid::unit(14, "pt"),
-      axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1),
+      panel.border       = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
+      strip.text          = ggplot2::element_text(face = "bold", size = 14),
+      panel.spacing.x      = grid::unit(14, "pt"),
+      axis.text.x          = ggplot2::element_text(angle = 45, hjust = 1),
       axis.title.x = element_text(size = 17),
       axis.title.y = element_text(size = 17),
       axis.text.y         = ggplot2::element_text(size = 12),
