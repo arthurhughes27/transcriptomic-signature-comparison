@@ -52,8 +52,8 @@ ROWS_PER_PAGE <- 45
 
 # A4 landscape (cm) - gives 45 gene sets (with full names/descriptions) a
 # readable row height of ~4.7mm on one page.
-GENESET_PAGE_WIDTH_CM  <- 29.7
-GENESET_PAGE_HEIGHT_CM <- 21
+GENESET_PAGE_WIDTH_CM  <- 45
+GENESET_PAGE_HEIGHT_CM <- 40
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
@@ -88,4 +88,4 @@ message(sprintf(
   length(p_genesets_pages), p_fig_genesets
 ))
 
-rm(list = ls())
+# rm(list = ls())
