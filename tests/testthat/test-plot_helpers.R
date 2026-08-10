@@ -65,3 +65,31 @@ test_that("day_facet_strip() builds a strip object without erroring", {
   strip <- day_facet_strip(c(1, 3, 7))
   expect_false(is.null(strip))
 })
+
+test_that("day_highlight_bands() returns one band per highlighted day present, positioned by axis order", {
+  testthat::skip_if_not_installed("ggplot2")
+
+  x_levels <- c("1", "3", "7", "10")
+  bands <- day_highlight_bands(x_levels, highlight_days = c(1, 7))
+
+  expect_equal(length(bands), 2)
+  # Day 1 is at x-position 1, Day 7 at x-position 3.
+  expect_equal(bands[[1]]$data$xmin, 1 - 0.5)
+  expect_equal(bands[[2]]$data$xmin, 3 - 0.5)
+})
+
+test_that("day_highlight_bands() skips highlighted days absent from x_levels", {
+  testthat::skip_if_not_installed("ggplot2")
+
+  bands <- day_highlight_bands(c("1", "3"), highlight_days = c(1, 3, 7))
+
+  expect_equal(length(bands), 2)
+})
+
+test_that("day_highlight_bands() uses the same colour as assign_day_colours()", {
+  testthat::skip_if_not_installed("ggplot2")
+
+  bands <- day_highlight_bands(c("1"), highlight_days = 1)
+
+  expect_equal(bands[[1]]$data$fill, unname(assign_day_colours(1)[["Day 1"]]))
+})

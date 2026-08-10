@@ -8,6 +8,11 @@
 # contributing study). The per-study equivalent of this figure has been
 # moved to Appendix A (analysis/descriptive/is2_appendix_descriptives.R),
 # since a reader wants the vaccine-level picture first.
+#
+# The days actually used in the DGSA analysis grid (DAYS_TO_HIGHLIGHT,
+# below) are highlighted with a light background band, in the same
+# per-day colours used throughout the specification-analysis figures
+# (R/plot_helpers.R's assign_day_colours()/day_highlight_bands()).
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────
@@ -16,12 +21,18 @@ library(dplyr)
 library(ggplot2)
 library(fs)
 
+source(fs::path("R", "load_all.R"))
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 processed_data_folder      <- "data"
 descriptive_figures_folder <- fs::path("output", "figures", "descriptive")
 
 fs::dir_create(descriptive_figures_folder)
+
+# Timepoints highlighted on the bubble plots below - matches DAYS_TO_ANALYSE
+# in the reanalysis/specification-analysis driver scripts.
+DAYS_TO_HIGHLIGHT <- c(1, 3, 7)
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +69,7 @@ size_breaks_counts <- c(10, 50, 100, 200, 400)
 size_breaks         <- size_breaks_counts ^ (2 / 3)
 
 bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
+  day_highlight_bands(levels(counts$time_post_last_vax), DAYS_TO_HIGHLIGHT) +
   geom_point(
     aes(size = size_var, fill = vaccine_name),
     shape = 21, colour = "black", alpha = 0.75, show.legend = c(size = TRUE, fill = FALSE)

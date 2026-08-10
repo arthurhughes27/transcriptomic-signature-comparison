@@ -20,6 +20,8 @@ library(cowplot)
 library(knitr)
 library(fs)
 
+source(fs::path("R", "load_all.R"))
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 processed_data_folder      <- "data"
@@ -28,6 +30,10 @@ descriptive_tables_folder  <- fs::path("output", "tables", "descriptive")
 
 fs::dir_create(descriptive_figures_folder)
 fs::dir_create(descriptive_tables_folder)
+
+# Timepoints highlighted on the study bubble plot below - matches
+# DAYS_TO_ANALYSE in the reanalysis/specification-analysis driver scripts.
+DAYS_TO_HIGHLIGHT <- c(1, 3, 7)
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
@@ -102,7 +108,11 @@ vaccine_legend_layer <- function(df) {
 # by vaccine), days post-vaccination on the x-axis, bubble size
 # proportional to the number of transcriptomic samples available for that
 # study x timepoint combination. Moved here from the main text so the
-# main-text figure gives the vaccine-level picture first.
+# main-text figure gives the vaccine-level picture first. The days
+# actually used in the DGSA analysis grid (DAYS_TO_HIGHLIGHT, above) are
+# highlighted with a light background band, in the same per-day colours
+# used throughout the specification-analysis figures
+# (R/plot_helpers.R's assign_day_colours()/day_highlight_bands()).
 
 study_bubble_counts <- hipc_merged_all_norm %>%
   group_by(study_accession_unique, vaccine_colour,
@@ -127,6 +137,7 @@ study_bubble_size_breaks_counts <- c(10, 50, 100, 200)
 study_bubble_size_breaks         <- study_bubble_size_breaks_counts ^ (2 / 3)
 
 p_study_bubble <- ggplot(study_bubble_counts, aes(x = time_post_last_vax, y = study_accession_unique)) +
+  day_highlight_bands(levels(study_bubble_counts$time_post_last_vax), DAYS_TO_HIGHLIGHT) +
   geom_point(
     aes(size = size_var, fill = vaccine_name),
     shape = 21, colour = "black", alpha = 0.75
