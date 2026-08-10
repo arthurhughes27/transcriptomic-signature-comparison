@@ -32,4 +32,30 @@ test_that("assign_dgsa_colours() adds condition.colour and gs.colour columns", {
 
 test_that("default configuration vectors are aligned", {
   expect_equal(length(default_conditions_order()), length(default_condition_colors()))
+  expect_equal(length(default_day_order()), length(default_day_colors()))
+})
+
+test_that("assign_day_colours() gives the same colour to a day regardless of which other days are present", {
+  colour_full   <- assign_day_colours(c(1, 3, 7, 10, 14, 21))
+  colour_subset <- assign_day_colours(c(3, 7))
+
+  expect_equal(colour_full[["Day 3"]], colour_subset[["Day 3"]])
+  expect_equal(colour_full[["Day 7"]], colour_subset[["Day 7"]])
+})
+
+test_that("assign_day_colours() restricts output to the days present in times", {
+  out <- assign_day_colours(c(1, 7))
+  expect_equal(names(out), c("Day 1", "Day 7"))
+})
+
+test_that("assign_day_colours() handles days outside default_day_order() by ramping extra colours", {
+  out <- assign_day_colours(c(1, 3, 100))
+  expect_equal(names(out), c("Day 1", "Day 3", "Day 100"))
+  expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", out)))
+})
+
+test_that("day_facet_strip() builds a strip object without erroring", {
+  testthat::skip_if_not_installed("ggh4x")
+  strip <- day_facet_strip(c(1, 3, 7))
+  expect_false(is.null(strip))
 })

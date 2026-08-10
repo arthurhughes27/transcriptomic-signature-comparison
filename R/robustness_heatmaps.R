@@ -5,9 +5,10 @@
 # Section 2.2.4): an aggregate-level heatmap (main figure) and a gene-set-
 # level heatmap (supplementary figure), both structured the same way -
 # columns are comparisons, split into facets by timepoint (so where
-# timepoints change is unambiguous) and ordered within each facet by
-# vaccine (the existing default_conditions_order()); colour runs white (0)
-# to green (1).
+# timepoints change is unambiguous - each "Day X" facet strip is coloured
+# per day, see R/plot_helpers.R's assign_day_colours()/day_facet_strip())
+# and ordered within each facet by vaccine (the existing
+# default_conditions_order()); colour runs white (0) to green (1).
 # =============================================================================
 
 # Square-root transformation for the robustness colour scale.
@@ -92,11 +93,16 @@ summarise_robustness_by_aggregate <- function(robustness_df) {
 }
 
 # Shared day-facet + colour-scale + theme layers for both heatmaps below.
-robustness_heatmap_layers <- function(low_colour, high_colour) {
+# Facet strips are coloured per day (assign_day_colours()/day_facet_strip(),
+# R/plot_helpers.R) via ggh4x::facet_grid2(), so it's easy to tell at a
+# glance where one timepoint's block of columns ends and the next begins;
+# panel.spacing.x is widened to the same end.
+robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors = NULL) {
   list(
-    ggplot2::facet_grid(
-      . ~ time, scales = "free_x", space = "free_x",
-      labeller = ggplot2::labeller(time = function(x) paste0("Day ", x))
+    ggh4x::facet_grid2(
+      cols = ggplot2::vars(time), scales = "free_x", space = "free_x",
+      labeller = ggplot2::labeller(time = function(x) paste0("Day ", x)),
+      strip = day_facet_strip(times, day_colors)
     ),
     ggplot2::scale_fill_gradient(
       name = "Robustness",
@@ -108,8 +114,8 @@ robustness_heatmap_layers <- function(low_colour, high_colour) {
     ggplot2::theme_minimal(),
     ggplot2::theme(
       panel.grid       = ggplot2::element_blank(),
-      strip.background = ggplot2::element_rect(fill = "grey90", colour = NA),
       strip.text        = ggplot2::element_text(face = "bold", size = 12),
+      panel.spacing.x    = grid::unit(14, "pt"),
       axis.text.x        = ggplot2::element_text(angle = 45, hjust = 1)
     )
   )
@@ -141,7 +147,7 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
   ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.aggregate, fill = mean_robustness)) +
     ggplot2::geom_tile(colour = "grey85") +
     ggplot2::scale_y_discrete(limits = rev(agg_levels)) +
-    robustness_heatmap_layers(low_colour, high_colour) + ggplot2::scale_fill_gradient(
+    robustness_heatmap_layers(low_colour, high_colour, times = plot_data$time) + ggplot2::scale_fill_gradient(
       name = "Mean robustness",
       low = low_colour,
       high = high_colour,
@@ -224,7 +230,7 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
   p_main <- ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.name, fill = robustness)) +
     ggplot2::geom_tile() +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
-    robustness_heatmap_layers(low_colour, high_colour) +
+    robustness_heatmap_layers(low_colour, high_colour, times = plot_data$time) +
     ggplot2::labs(x = "Vaccine", y = NULL, title = "Robustness by gene set") +
     ggplot2::theme(axis.text.y = ggplot2::element_text(size = 6),
                    axis.title.x = element_text(size = 20),

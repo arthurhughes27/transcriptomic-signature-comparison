@@ -73,15 +73,16 @@ plot_baseline_significance_comparison <- function(pct_df,
     ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.7), width = 0.6) +
     ggplot2::scale_fill_manual(name = "Method", values = method_colour_map) +
     ggplot2::scale_y_continuous(limits = c(0, NA), expand = ggplot2::expansion(mult = c(0, 0.18))) +
-    ggplot2::facet_grid(
-      . ~ time, scales = "free_x", space = "free_x",
-      labeller = ggplot2::labeller(time = function(x) paste0("Day ", x))
+    ggh4x::facet_grid2(
+      cols = ggplot2::vars(time), scales = "free_x", space = "free_x",
+      labeller = ggplot2::labeller(time = function(x) paste0("Day ", x)),
+      strip = day_facet_strip(plot_data$time)
     ) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
-      strip.background  = ggplot2::element_rect(fill = "grey90", colour = NA),
       strip.text         = ggplot2::element_text(face = "bold"),
+      panel.spacing.x     = grid::unit(14, "pt"),
       axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1)
     ) +
     ggplot2::labs(
