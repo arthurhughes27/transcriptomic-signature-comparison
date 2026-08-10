@@ -31,10 +31,10 @@
 #'   `time`, `method`, `n_significant`, `n_evaluated`, `pct_significant`
 #'   (0-100).
 compute_pct_significant_by_comparison <- function(baseline_df,
-                                                   pval_col = "withinTime.adjPval_BH",
-                                                   alpha     = 0.05) {
+                                                  pval_col = "withinTime.adjPval_BH",
+                                                  alpha     = 0.05) {
   stopifnot(pval_col %in% colnames(baseline_df))
-
+  
   baseline_df |>
     dplyr::filter(!is.na(.data[[pval_col]])) |>
     dplyr::group_by(condition, time, method) |>
@@ -57,16 +57,16 @@ compute_pct_significant_by_comparison <- function(baseline_df,
 #'
 #' @return A ggplot object, faceted by timepoint.
 plot_baseline_significance_comparison <- function(pct_df,
-                                                   conditions_order = default_conditions_order(),
-                                                   method_colors     = NULL) {
-
+                                                  conditions_order = default_conditions_order(),
+                                                  method_colors     = NULL) {
+  
   plot_data <- order_robustness_comparisons(pct_df, conditions_order)
-
+  
   if (is.null(method_colors)) method_colors <- unname(default_method_colors())
-
+  
   methods            <- sort(unique(as.character(plot_data$method)))
   method_colour_map  <- assign_colours(methods, method_colors)
-
+  
   ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = pct_significant, fill = method)) +
     ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.7), width = 0.6) +
     ggplot2::scale_fill_manual(name = "Method", values = method_colour_map) +
@@ -79,9 +79,13 @@ plot_baseline_significance_comparison <- function(pct_df,
     ggplot2::theme_minimal() +
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
-      strip.text         = ggplot2::element_text(face = "bold"),
+      strip.text         = ggplot2::element_text(face = "bold", size = 14),
       panel.spacing.x     = grid::unit(14, "pt"),
-      axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1)
+      axis.text.x         = ggplot2::element_text(angle = 45, hjust = 1),
+      axis.title.x = element_text(size = 17),
+      axis.title.y = element_text(size = 17),
+      axis.text.y         = ggplot2::element_text(size = 12),
+      plot.title = element_text(size = 17, face = "bold"),
     ) +
     ggplot2::labs(
       x     = "Vaccine",
