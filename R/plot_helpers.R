@@ -213,7 +213,7 @@ day_facet_strip <- function(times, day_colors = NULL) {
 #' @return A list of `ggplot2::annotate("rect", ...)` layers, one per
 #'   highlighted day present in `x_levels`. Add with `+` BEFORE the data
 #'   layers (e.g. `geom_point()`) so the bands sit behind them.
-day_highlight_bands <- function(x_levels, highlight_days, day_colors = NULL, alpha = 0.6) {
+day_highlight_bands <- function(x_levels, highlight_days, day_colors = NULL, alpha = 0.9) {
   day_colour_map <- assign_day_colours(highlight_days, day_colors)
   present_days   <- intersect(as.character(highlight_days), x_levels)
 
