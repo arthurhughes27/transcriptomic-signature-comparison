@@ -111,6 +111,12 @@ default_aggregate_colors <- function() {
   )
 }
 
+#' Default per-DGSA-method hex colours (muted, low-contrast pair), aligned
+#' to `c("dearseq", "qusage")`
+default_method_colors <- function() {
+  c(dearseq = "#7C9CBF", qusage = "#C98B7B")
+}
+
 #' Canonical day (timepoint) ordering used for consistent day-colour
 #' assignment across every multi-day figure - a superset of whichever
 #' days happen to be present in any one analysis/figure.

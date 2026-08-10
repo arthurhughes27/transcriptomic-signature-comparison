@@ -52,25 +52,25 @@ compute_pct_significant_by_comparison <- function(baseline_df,
 #' @param pct_df Output of [compute_pct_significant_by_comparison()].
 #' @param conditions_order Vaccine ordering (see [default_conditions_order()]).
 #' @param method_colors Optional colours for the methods present in
-#'   `pct_df$method` (see [assign_colours()]).
-#' @param value_labels If TRUE (default), annotate each bar with its exact
-#'   percentage and evaluated gene-set count.
+#'   `pct_df$method` (see [assign_colours()]). Defaults to
+#'   [default_method_colors()] - a muted, low-contrast pair.
 #'
 #' @return A ggplot object, faceted by timepoint.
 plot_baseline_significance_comparison <- function(pct_df,
                                                    conditions_order = default_conditions_order(),
-                                                   method_colors     = NULL,
-                                                   value_labels       = TRUE) {
+                                                   method_colors     = NULL) {
 
   plot_data <- order_robustness_comparisons(pct_df, conditions_order)
 
-  methods            <- sort(unique(as.character(plot_data$method)))
-  method_colour_map  <- assign_colours(methods, method_colors, palette = "Set1")
+  if (is.null(method_colors)) method_colors <- unname(default_method_colors())
 
-  p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = pct_significant, fill = method)) +
+  methods            <- sort(unique(as.character(plot_data$method)))
+  method_colour_map  <- assign_colours(methods, method_colors)
+
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = pct_significant, fill = method)) +
     ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.7), width = 0.6) +
     ggplot2::scale_fill_manual(name = "Method", values = method_colour_map) +
-    ggplot2::scale_y_continuous(limits = c(0, NA), expand = ggplot2::expansion(mult = c(0, 0.18))) +
+    ggplot2::scale_y_continuous(limits = c(0, NA), expand = ggplot2::expansion(mult = c(0, 0.1))) +
     ggh4x::facet_grid2(
       cols = ggplot2::vars(time), scales = "free_x", space = "free_x",
       labeller = ggplot2::labeller(time = function(x) paste0("Day ", x)),
@@ -88,14 +88,4 @@ plot_baseline_significance_comparison <- function(pct_df,
       y     = "Significant gene sets (%)",
       title = "Baseline significance by DGSA method"
     )
-
-  if (value_labels) {
-    p <- p + ggplot2::geom_text(
-      ggplot2::aes(label = sprintf("%.0f%%\n(n=%d)", pct_significant, n_evaluated)),
-      position = ggplot2::position_dodge(width = 0.7),
-      vjust = -0.2, size = 2.2
-    )
-  }
-
-  p
 }

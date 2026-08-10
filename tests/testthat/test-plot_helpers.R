@@ -35,6 +35,12 @@ test_that("default configuration vectors are aligned", {
   expect_equal(length(default_day_order()), length(default_day_colors()))
 })
 
+test_that("default_method_colors() gives one colour each for dearseq and qusage", {
+  out <- default_method_colors()
+  expect_equal(names(out), c("dearseq", "qusage"))
+  expect_true(all(grepl("^#[0-9A-Fa-f]{6}$", out)))
+})
+
 test_that("assign_day_colours() gives the same colour to a day regardless of which other days are present", {
   colour_full   <- assign_day_colours(c(1, 3, 7, 10, 14, 21))
   colour_subset <- assign_day_colours(c(3, 7))

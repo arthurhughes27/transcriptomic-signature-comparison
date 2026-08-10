@@ -58,7 +58,7 @@ test_that("plot_baseline_significance_comparison() returns a ggplot with bars ma
   expect_equal(sort(p$data$pct_significant), sort(pct_df$pct_significant))
 })
 
-test_that("plot_baseline_significance_comparison() can suppress value labels", {
+test_that("plot_baseline_significance_comparison() uses default_method_colors() by default", {
   testthat::skip_if_not_installed("ggplot2")
   testthat::skip_if_not_installed("ggh4x")
 
@@ -67,8 +67,25 @@ test_that("plot_baseline_significance_comparison() can suppress value labels", {
     n_significant = c(1, 2), n_evaluated = c(10, 10), pct_significant = c(10, 20)
   )
 
-  p_with_labels    <- plot_baseline_significance_comparison(pct_df, conditions_order = "Vaccine A", value_labels = TRUE)
-  p_without_labels <- plot_baseline_significance_comparison(pct_df, conditions_order = "Vaccine A", value_labels = FALSE)
+  p <- plot_baseline_significance_comparison(pct_df, conditions_order = "Vaccine A")
 
-  expect_equal(length(p_with_labels$layers), length(p_without_labels$layers) + 1)
+  fill_scale <- ggplot2::layer_scales(p)$fill
+  expect_equal(unname(fill_scale$palette(2)), unname(default_method_colors()))
+})
+
+test_that("plot_baseline_significance_comparison() respects an explicit method_colors override", {
+  testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
+
+  pct_df <- tibble::tibble(
+    condition = "Vaccine A", time = 1, method = c("dearseq", "qusage"),
+    n_significant = c(1, 2), n_evaluated = c(10, 10), pct_significant = c(10, 20)
+  )
+
+  p <- plot_baseline_significance_comparison(
+    pct_df, conditions_order = "Vaccine A", method_colors = c("#000001", "#000002")
+  )
+
+  fill_scale <- ggplot2::layer_scales(p)$fill
+  expect_equal(unname(fill_scale$palette(2)), c("#000001", "#000002"))
 })
