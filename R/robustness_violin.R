@@ -9,7 +9,9 @@
 # each facet by vaccine (default_conditions_order()) - reuses
 # order_robustness_comparisons() from that file so the two figures' column
 # ordering can never drift apart. Each day's panel gets a black outline
-# (panel.border) to further separate the day blocks visually.
+# (panel.border) and its violins are filled with that day's colour
+# (assign_day_colours(), matching the facet strip) to further separate
+# the day blocks visually.
 # =============================================================================
 
 #' Plot the distribution of per-gene-set robustness for each comparison
@@ -25,22 +27,28 @@
 #'   gene-set aggregate, unlike [summarise_robustness_by_aggregate()]'s
 #'   input.
 #' @param conditions_order Vaccine ordering (see [default_conditions_order()]).
-#' @param fill_colour Violin/boxplot accent colour.
+#' @param day_colors Optional explicit per-day colours (see
+#'   [assign_day_colours()]); violins are filled with the same colour as
+#'   their day's facet strip.
 #'
 #' @return A ggplot object, faceted by timepoint.
 plot_robustness_violin <- function(robustness_df,
                                    conditions_order = default_conditions_order(),
-                                   fill_colour = "#238b45") {
+                                   day_colors = NULL) {
 
   plot_data <- order_robustness_comparisons(robustness_df, conditions_order)
 
+  day_colour_map <- assign_day_colours(plot_data$time, day_colors)
+  names(day_colour_map) <- levels(plot_data$time)
+
   ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = robustness)) +
-    ggplot2::geom_violin(fill = fill_colour, colour = fill_colour, alpha = 0.6, scale = "width", trim = TRUE) +
+    ggplot2::geom_violin(ggplot2::aes(fill = time), colour = "grey30", alpha = 0.85, scale = "width", trim = TRUE) +
     ggplot2::geom_boxplot(width = 0.08, outlier.shape = NA, fill = "white", colour = "grey30", alpha = 0.8) +
+    ggplot2::scale_fill_manual(values = day_colour_map, guide = "none") +
     ggh4x::facet_grid2(
       cols = ggplot2::vars(time), scales = "free_x", space = "free_x",
       labeller = ggplot2::labeller(time = function(x) paste0("Day ", x)),
-      strip = day_facet_strip(plot_data$time)
+      strip = day_facet_strip(plot_data$time, day_colors)
     ) +
     ggplot2::coord_cartesian(ylim = c(0, 1)) +
     ggplot2::theme_minimal() +
