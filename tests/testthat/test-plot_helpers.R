@@ -93,3 +93,20 @@ test_that("day_highlight_bands() uses the same colour as assign_day_colours()", 
 
   expect_equal(bands[[1]]$data$fill, unname(assign_day_colours(1)[["Day 1"]]))
 })
+
+test_that("save_multi_page_pdf() writes one PDF with as many pages as plots given", {
+  testthat::skip_if_not_installed("ggplot2")
+
+  plots <- list(
+    ggplot2::ggplot(data.frame(x = 1), ggplot2::aes(x)) + ggplot2::geom_point(ggplot2::aes(y = 1)),
+    ggplot2::ggplot(data.frame(x = 2), ggplot2::aes(x)) + ggplot2::geom_point(ggplot2::aes(y = 1))
+  )
+
+  tmp_pdf <- tempfile(fileext = ".pdf")
+  on.exit(unlink(tmp_pdf), add = TRUE)
+
+  save_multi_page_pdf(plots, path = tmp_pdf, width = 4, height = 3)
+
+  expect_true(fs::file_exists(tmp_pdf))
+  expect_gt(fs::file_size(tmp_pdf), 0)
+})

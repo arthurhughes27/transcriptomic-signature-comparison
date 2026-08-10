@@ -67,7 +67,7 @@ test_that("plot_robustness_heatmap_aggregate() returns a ggplot without erroring
   expect_s3_class(p, "ggplot")
 })
 
-test_that("plot_robustness_heatmap_genesets() returns a patchwork object and drops always-null gene sets", {
+test_that("plot_robustness_heatmap_genesets() returns a single-page list by default and drops always-null gene sets", {
   testthat::skip_if_not_installed("patchwork")
   testthat::skip_if_not_installed("ggplot2")
   testthat::skip_if_not_installed("ggh4x")
@@ -83,7 +83,7 @@ test_that("plot_robustness_heatmap_genesets() returns a patchwork object and dro
     )
 
   expect_message(
-    p <- plot_robustness_heatmap_genesets(
+    pages <- plot_robustness_heatmap_genesets(
       robustness_df,
       conditions_order = c("Vaccine A", "Vaccine B"),
       aggregate_colors  = c("#111111", "#222222")
@@ -91,7 +91,9 @@ test_that("plot_robustness_heatmap_genesets() returns a patchwork object and dro
     "Dropping 1 gene set"
   )
 
-  expect_s3_class(p, "patchwork")
+  expect_type(pages, "list")
+  expect_length(pages, 1)
+  expect_s3_class(pages[[1]], "patchwork")
 })
 
 test_that("plot_robustness_heatmap_genesets() keeps all gene sets when drop_null_gene_sets = FALSE", {
@@ -109,12 +111,64 @@ test_that("plot_robustness_heatmap_genesets() keeps all gene sets when drop_null
       robustness    = 0
     )
 
-  p <- plot_robustness_heatmap_genesets(
+  pages <- plot_robustness_heatmap_genesets(
     robustness_df,
     conditions_order    = "Vaccine A",
     aggregate_colors     = "#111111",
     drop_null_gene_sets   = FALSE
   )
 
-  expect_s3_class(p, "patchwork")
+  expect_length(pages, 1)
+  expect_s3_class(pages[[1]], "patchwork")
+})
+
+test_that("plot_robustness_heatmap_genesets() splits gene sets across pages when rows_per_page is exceeded", {
+  testthat::skip_if_not_installed("patchwork")
+  testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = paste0("gs", 1:5),
+    condition = "Vaccine A",
+    time      = 1
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor("A", levels = "A"),
+      robustness    = 0.5
+    )
+
+  pages <- plot_robustness_heatmap_genesets(
+    robustness_df,
+    conditions_order = "Vaccine A",
+    aggregate_colors  = "#111111",
+    rows_per_page      = 2
+  )
+
+  expect_length(pages, 3)  # 5 gene sets, 2 per page -> 3 pages
+  for (p in pages) expect_s3_class(p, "patchwork")
+})
+
+test_that("plot_robustness_heatmap_genesets() rows_per_page = Inf gives a single page", {
+  testthat::skip_if_not_installed("patchwork")
+  testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = paste0("gs", 1:5),
+    condition = "Vaccine A",
+    time      = 1
+  ) |>
+    dplyr::mutate(
+      gs.aggregate = factor("A", levels = "A"),
+      robustness    = 0.5
+    )
+
+  pages <- plot_robustness_heatmap_genesets(
+    robustness_df,
+    conditions_order = "Vaccine A",
+    aggregate_colors  = "#111111",
+    rows_per_page      = Inf
+  )
+
+  expect_length(pages, 1)
 })
