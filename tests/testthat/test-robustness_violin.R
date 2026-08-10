@@ -49,3 +49,23 @@ test_that("plot_robustness_violin() appends unrecognised conditions with a warni
   )
   expect_equal(levels(p$data$condition), c("V1", "V3"))
 })
+
+test_that("plot_robustness_violin() fills violins with the matching day colour", {
+  testthat::skip_if_not_installed("ggplot2")
+  testthat::skip_if_not_installed("ggh4x")
+
+  robustness_df <- tidyr::expand_grid(
+    gs.name   = paste0("gs", 1:3),
+    condition = "Vaccine A",
+    time      = c(1, 7)
+  ) |>
+    dplyr::mutate(robustness = 0.5)
+
+  p <- plot_robustness_violin(robustness_df, conditions_order = "Vaccine A")
+
+  fill_scale <- ggplot2::layer_scales(p, 1, 1)$fill
+  day_colour_map <- assign_day_colours(c(1, 7))
+
+  expect_equal(unname(fill_scale$map(factor("1"))), unname(day_colour_map[["Day 1"]]))
+  expect_equal(unname(fill_scale$map(factor("7"))), unname(day_colour_map[["Day 7"]]))
+})
