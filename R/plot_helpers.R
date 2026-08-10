@@ -192,3 +192,37 @@ day_facet_strip <- function(times, day_colors = NULL) {
     background_x = ggh4x::elem_list_rect(fill = unname(day_colour_map))
   )
 }
+
+#' Build background-band layers highlighting specific days on a discrete
+#' x-axis
+#'
+#' For plots where days are shown as ordinary discrete x-axis categories
+#' rather than facets (e.g. the sample-size bubble plots), this draws a
+#' full-height background band behind each highlighted day's column,
+#' using the same colours as [assign_day_colours()]/[day_facet_strip()] -
+#' so, e.g., the days actually used in the DGSA analysis grid stand out
+#' consistently with every other figure.
+#'
+#' @param x_levels Character vector giving the plot's x-axis factor
+#'   levels, in axis order (e.g. `levels(counts$time_post_last_vax)`).
+#' @param highlight_days Numeric vector of days to highlight. Days not
+#'   present (as characters) in `x_levels` are silently skipped.
+#' @param day_colors Optional explicit colours (see [assign_day_colours()]).
+#' @param alpha Band transparency.
+#'
+#' @return A list of `ggplot2::annotate("rect", ...)` layers, one per
+#'   highlighted day present in `x_levels`. Add with `+` BEFORE the data
+#'   layers (e.g. `geom_point()`) so the bands sit behind them.
+day_highlight_bands <- function(x_levels, highlight_days, day_colors = NULL, alpha = 0.6) {
+  day_colour_map <- assign_day_colours(highlight_days, day_colors)
+  present_days   <- intersect(as.character(highlight_days), x_levels)
+
+  lapply(present_days, function(day_label) {
+    x_pos <- match(day_label, x_levels)
+    ggplot2::annotate(
+      "rect",
+      xmin = x_pos - 0.5, xmax = x_pos + 0.5, ymin = -Inf, ymax = Inf,
+      fill = day_colour_map[[paste0("Day ", day_label)]], alpha = alpha
+    )
+  })
+}
