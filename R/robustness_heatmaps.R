@@ -120,7 +120,7 @@ robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors
     ggplot2::theme_minimal(),
     ggplot2::theme(
       panel.grid       = ggplot2::element_blank(),
-      panel.border     = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
+      panel.border     = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.5),
       strip.text        = ggplot2::element_text(face = "bold", size = 12),
       panel.spacing.x    = grid::unit(14, "pt"),
       axis.text.x        = ggplot2::element_text(angle = 45, hjust = 1)
