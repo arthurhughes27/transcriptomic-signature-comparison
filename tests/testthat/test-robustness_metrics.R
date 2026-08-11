@@ -35,6 +35,65 @@ test_that("count_significant_specifications() errors without adjusted p-value co
   expect_error(count_significant_specifications(df))
 })
 
+test_that("select_adjpval_columns() restricts to the given methods, matched on the _{method} suffix", {
+  df <- tibble::tibble(
+    global.adjPval_holm        = 1,
+    withinTime.adjPval_BH      = 1,
+    withinTime.adjPval_BY      = 1,
+    global.adjPval_hochberg    = 1,
+    global.adjPval_hommel      = 1,
+    global.adjPval_bonferroni  = 1
+  )
+
+  expect_equal(
+    sort(select_adjpval_columns(df, methods = c("holm", "BH", "BY"))),
+    sort(c("global.adjPval_holm", "withinTime.adjPval_BH", "withinTime.adjPval_BY"))
+  )
+  expect_equal(select_adjpval_columns(df, methods = NULL), colnames(df))
+})
+
+test_that("count_significant_specifications() only counts the requested methods' columns", {
+  df <- tibble::tibble(
+    gs.name                   = c("gs1", "gs2"),
+    fc.score                   = c(1, 1),
+    global.adjPval_holm         = c(0.01, 0.5),  # significant for gs1 only
+    global.adjPval_hochberg      = c(0.01, 0.01)  # would make both significant if counted
+  )
+
+  restricted <- count_significant_specifications(
+    df, alphas = 0.05, fc_thresholds = 0, methods = "holm"
+  )
+  unrestricted <- count_significant_specifications(
+    df, alphas = 0.05, fc_thresholds = 0, methods = NULL
+  )
+
+  expect_equal(restricted, c(1L, 0L))
+  expect_equal(unrestricted, c(2L, 1L))
+})
+
+test_that("accumulate_robustness_counts() computes n_evaluated from the restricted method set", {
+  tidy_df <- tibble::tibble(
+    gs.name                  = "gs1",
+    condition                 = "V1",
+    time                       = 7,
+    fc.score                    = 1,
+    global.adjPval_holm          = 0.01,
+    withinTime.adjPval_holm       = 0.01,
+    withinComparison.adjPval_holm  = 0.01,
+    global.adjPval_hochberg          = 0.01,
+    withinTime.adjPval_hochberg       = 0.01,
+    withinComparison.adjPval_hochberg  = 0.01
+  )
+
+  acc <- accumulate_robustness_counts(
+    NULL, tidy_df, alphas = c(0.05, 0.1), fc_thresholds = 0, methods = "holm"
+  )
+
+  # 3 scope columns (holm only) x 2 alphas x 1 threshold = 6, not 12.
+  expect_equal(acc$n_evaluated, 6)
+  expect_equal(acc$n_significant, 6)
+})
+
 test_that("accumulate_robustness_counts() and compute_robustness_metric() combine multiple raw runs correctly", {
   run1 <- tibble::tibble(
     gs.name           = c("gs1", "gs2"),
