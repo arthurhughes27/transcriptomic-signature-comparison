@@ -1,7 +1,7 @@
 # =============================================================================
 # Specification analysis — 01: build specification grid
 # =============================================================================
-# Builds and saves the raw (66) and post-hoc (540) specification grids
+# Builds and saves the raw (34) and post-hoc (81) specification grids
 # (R/specifications.R), so downstream scripts (02, 03) and manual
 # inspection share a single, versioned copy rather than rebuilding it ad
 # hoc. See Chapter 2, Table 2.1.

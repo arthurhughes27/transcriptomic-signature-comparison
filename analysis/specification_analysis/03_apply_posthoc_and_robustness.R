@@ -6,7 +6,7 @@
 # p-value-adjusts them (R/postprocessing.R), and folds significance counts
 # across the full post-hoc grid into the robustness metric pi_{g,v,j}
 # (R/robustness_metrics.R) - without ever materialising the full
-# 35,640-specification table (see the module-level comment at the top of
+# 2,754-specification table (see the module-level comment at the top of
 # R/robustness_metrics.R for why this is possible).
 #
 # Checkpointed at the level of "which raw specifications have been folded
@@ -25,14 +25,21 @@
 # adjPval_{method} column present would silently include 3 unintended
 # extra methods (see the module-level comment in R/robustness_metrics.R).
 #
-# IMPORTANT: if you have an existing robustness_accumulator_state.rds from
-# before this fix, its already-accumulated counts were computed with the
-# unfiltered (18-column) method set and are NOT corrected by re-running
-# this script as-is - resuming only processes NEW raw specifications, it
-# doesn't re-derive ones already folded in. Delete
+# IMPORTANT: whenever raw_specification_grid.rds changes - e.g. after the
+# fix above, or after removing gene_based_weights as an investigated axis
+# in R/specifications.R's build_raw_specification_grid() (dropping the raw
+# grid from 66 to 34 rows) - any existing
+# robustness_accumulator_state.rds/robustness_metrics.rds was accumulated
+# against the OLD raw grid and will NOT be corrected by simply re-running
+# this script: resuming only processes raw specifications not already
+# folded in, it never re-derives ones that are, and it also never removes
+# a since-dropped specification's contribution. Delete
 # output/results/specification_analysis/robustness_accumulator_state.rds
-# (and robustness_metrics.rds) before re-running to get a fully correct
-# result.
+# (and robustness_metrics.rds) before re-running whenever the raw grid
+# itself has changed, to get a fully correct result. Re-running
+# 02_run_raw_specifications.R is NOT required in this case - it reuses
+# whichever already-computed output/results/specification_analysis/raw/
+# {spec_label}.rds files match the (possibly smaller) new raw grid.
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────

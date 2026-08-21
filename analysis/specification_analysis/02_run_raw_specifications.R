@@ -1,7 +1,7 @@
 # =============================================================================
 # Specification analysis — 02: run raw specifications
 # =============================================================================
-# Runs each of the 66 raw specifications (output of 01_build_specification_
+# Runs each of the 34 raw specifications (output of 01_build_specification_
 # grid.R) across every vaccine x DAYS_TO_ANALYSE timepoint comparison (days
 # 1, 3, and 7 by default - edit DAYS_TO_ANALYSE below, or set it to NULL for
 # every timepoint present in the data), using run_dearseq_comparison() /
@@ -11,7 +11,7 @@
 # interrupted run resumes rather than restarts, both across specifications
 # and within one.
 #
-# THIS IS THE EXPENSIVE STEP: 66 specifications x every valid comparison,
+# THIS IS THE EXPENSIVE STEP: 34 specifications x every valid comparison,
 # many involving dearseq's permutation test (1000 permutations for small
 # samples). Expect this to take a long time on a laptop.
 #
