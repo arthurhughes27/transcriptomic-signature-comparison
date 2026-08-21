@@ -1,34 +1,44 @@
 # =============================================================================
 # Specification grid generation (Chapter 2, Table 2.1)
 # =============================================================================
-# The 35,640 specifications in Table 2.1 factor into two independent tiers:
+# The 2,754 specifications considered factor into two independent tiers:
 #
-#   - "raw" specifications (66 total: 64 dearseq + 2 QuSAGE) require actually
-#     re-running a DGSA method (method; covariate set; weight method/level
-#     for dearseq; equal-variance assumption for QuSAGE).
-#   - "post-hoc" specifications (540) are cheap, vectorised operations
+#   - "raw" specifications (34 total: 32 dearseq + 2 QuSAGE) require actually
+#     re-running a DGSA method (method; covariate set; weight method for
+#     dearseq; equal-variance assumption for QuSAGE).
+#   - "post-hoc" specifications (81) are cheap, vectorised operations
 #     applied to an already-computed raw run's p-values and fold-changes
 #     (p-value adjustment scope; adjustment method; significance level;
 #     fold-change threshold).
 #
-# 66 raw runs x 540 post-hoc combinations = 35,640, matching Table 2.1.
-# Running DGSA 66 times (not 35,640 times) and applying the post-hoc grid
-# afterwards (R/postprocessing.R, R/robustness_metrics.R) is what makes the
-# full specification analysis computationally tractable.
+# 34 raw runs x 81 post-hoc combinations = 2,754. Running DGSA 34 times (not
+# 2,754 times) and applying the post-hoc grid afterwards
+# (R/postprocessing.R, R/robustness_metrics.R) is what makes the full
+# specification analysis computationally tractable.
+#
+# The weight-estimation LEVEL hyperparameter (gene-level vs
+# observation-level, dearseq only) was dropped from the raw grid entirely -
+# only the observation-level baseline is run - rather than investigated as
+# a specification axis; `gene_based_weights` is kept as an always-FALSE
+# column (not removed) so spec_label naming and downstream schema stay
+# stable.
 # =============================================================================
 
-#' Build the raw specification grid (66 rows)
+#' Build the raw specification grid (34 rows)
 #'
 #' One row per specification that requires actually running a DGSA method:
-#' 64 dearseq specifications (16 covariate subsets x 2 weight methods x 2
-#' weight levels) and 2 QuSAGE specifications (equal-variance assumption).
+#' 32 dearseq specifications (16 covariate subsets x 2 weight methods,
+#' observation-level weight estimation only) and 2 QuSAGE specifications
+#' (equal-variance assumption).
 #'
 #' @return A tibble with columns `raw_spec_id`, `method` ("dearseq" or
 #'   "qusage"), `covariates` (list-column of character vectors; NULL for
-#'   QuSAGE), `which_weights`, `gene_based_weights` (dearseq only; NA for
-#'   QuSAGE), `equal_variance` (QuSAGE only; NA for dearseq), `is_baseline`
-#'   (TRUE for the bolded options in Table 2.1), and `spec_label` (a
-#'   human-readable identifier suitable for file naming).
+#'   QuSAGE), `which_weights`, `gene_based_weights` (dearseq only, always
+#'   FALSE - observation-level weight estimation is no longer investigated
+#'   as a specification axis; NA for QuSAGE), `equal_variance` (QuSAGE
+#'   only; NA for dearseq), `is_baseline` (TRUE for the bolded options in
+#'   Table 2.1), and `spec_label` (a human-readable identifier suitable for
+#'   file naming).
 build_raw_specification_grid <- function() {
   covariate_pool <- c("age_imputed", "gender", "study_accession", "race")
   covariate_sets <- unlist(
@@ -39,14 +49,13 @@ build_raw_specification_grid <- function() {
   dearseq_grid <- tidyr::expand_grid(
     covariates          = covariate_sets,
     which_weights        = c("loclin", "voom"),
-    gene_based_weights    = c(FALSE, TRUE)
+    gene_based_weights    = FALSE
   ) |>
     dplyr::mutate(
       method          = "dearseq",
       equal_variance   = NA,
       is_baseline       = purrr::map_lgl(covariates, setequal, covariate_pool) &
-                          which_weights == "loclin" &
-                          !gene_based_weights,
+                          which_weights == "loclin",
       spec_label         = purrr::pmap_chr(
         list(covariates, which_weights, gene_based_weights),
         function(cov, wt, lvl) {
@@ -72,7 +81,7 @@ build_raw_specification_grid <- function() {
                   equal_variance, is_baseline, spec_label)
 }
 
-#' Build the post-hoc specification grid (540 rows)
+#' Build the post-hoc specification grid (81 rows)
 #'
 #' One row per specification applied after a raw DGSA run: p-value
 #' adjustment scope, adjustment method, significance level, and mean
@@ -105,10 +114,10 @@ build_posthoc_specification_grid <- function() {
 
 #' Build the full specification grid (raw x post-hoc cross join)
 #'
-#' Materialises every one of the 35,640 specifications in Table 2.1 as a
+#' Materialises every one of the 2,754 specifications considered as a
 #' single row. Intended for validation/testing and small-scale inspection
 #' only - the main specification-analysis pipeline (R/robustness_metrics.R)
-#' deliberately avoids materialising this at full scale (35,640
+#' deliberately avoids materialising this at full scale (2,754
 #' specifications x every gene set x comparison would be very large), instead
 #' running each raw specification once and accumulating post-hoc results.
 #'

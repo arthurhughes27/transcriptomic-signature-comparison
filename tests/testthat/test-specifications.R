@@ -1,18 +1,25 @@
-test_that("build_raw_specification_grid() produces 64 dearseq + 2 qusage specifications", {
+test_that("build_raw_specification_grid() produces 32 dearseq + 2 qusage specifications", {
   raw_grid <- build_raw_specification_grid()
 
-  expect_equal(nrow(raw_grid), 66)
-  expect_equal(sum(raw_grid$method == "dearseq"), 64)
+  expect_equal(nrow(raw_grid), 34)
+  expect_equal(sum(raw_grid$method == "dearseq"), 32)
   expect_equal(sum(raw_grid$method == "qusage"), 2)
-  expect_equal(length(unique(raw_grid$raw_spec_id)), 66)
-  expect_equal(length(unique(raw_grid$spec_label)), 66)
+  expect_equal(length(unique(raw_grid$raw_spec_id)), 34)
+  expect_equal(length(unique(raw_grid$spec_label)), 34)
+})
+
+test_that("build_raw_specification_grid() no longer varies gene_based_weights (observation-level only)", {
+  raw_grid <- build_raw_specification_grid()
+
+  dearseq_grid <- dplyr::filter(raw_grid, method == "dearseq")
+  expect_true(all(!dearseq_grid$gene_based_weights))
 })
 
 test_that("build_raw_specification_grid() covariate sets are all 16 subsets of the pool", {
   raw_grid <- build_raw_specification_grid()
   covariate_pool <- c("age_imputed", "gender", "study_accession", "race")
 
-  # 16 covariate subsets x 2 weight methods x 2 weight levels = 64 rows
+  # 16 covariate subsets x 2 weight methods = 32 rows
   covariate_lengths <- raw_grid |>
     dplyr::filter(method == "dearseq") |>
     dplyr::pull(covariates) |>
@@ -41,10 +48,10 @@ test_that("build_raw_specification_grid() flags exactly one baseline per method"
   expect_false(qusage_baseline$equal_variance)
 })
 
-test_that("build_posthoc_specification_grid() produces 540 specifications with one baseline", {
+test_that("build_posthoc_specification_grid() produces 81 specifications with one baseline", {
   posthoc_grid <- build_posthoc_specification_grid()
 
-  expect_equal(nrow(posthoc_grid), 540)
+  expect_equal(nrow(posthoc_grid), 81)
   expect_equal(sum(posthoc_grid$is_baseline), 1)
 
   baseline <- dplyr::filter(posthoc_grid, is_baseline)
@@ -54,10 +61,10 @@ test_that("build_posthoc_specification_grid() produces 540 specifications with o
   expect_equal(baseline$fc_threshold, 0)
 })
 
-test_that("build_full_specification_grid() produces exactly 35,640 specifications with one baseline", {
+test_that("build_full_specification_grid() produces exactly 2,754 specifications with one baseline", {
   full_grid <- build_full_specification_grid()
 
-  expect_equal(nrow(full_grid), 35640)
+  expect_equal(nrow(full_grid), 2754)
   expect_equal(sum(full_grid$is_baseline), 1)
-  expect_equal(length(unique(full_grid$spec_id)), 35640)
+  expect_equal(length(unique(full_grid$spec_id)), 2754)
 })
