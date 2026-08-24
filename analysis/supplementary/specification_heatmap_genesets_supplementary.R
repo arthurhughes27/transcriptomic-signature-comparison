@@ -56,8 +56,12 @@ fs::dir_create(out_dir)
 
 ROWS_PER_PAGE <- 52
 
-GENESET_PAGE_WIDTH_CM  <- 45
-GENESET_PAGE_HEIGHT_CM <- 45 * sqrt(2)  # true A4 ratio (1:1.414), ~63.6cm
+# Width widened from 45 to 52cm to fit the larger Aggregate/Signal-robustness
+# legends (see R/robustness_heatmaps.R::build_geneset_heatmap_page()); height
+# left as originally calibrated (against a 45cm width) so it still matches
+# ROWS_PER_PAGE above.
+GENESET_PAGE_WIDTH_CM  <- 52
+GENESET_PAGE_HEIGHT_CM <- 45 * sqrt(2)  # ~63.6cm
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
