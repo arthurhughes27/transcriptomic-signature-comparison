@@ -103,7 +103,13 @@ summarise_robustness_by_aggregate <- function(robustness_df) {
 # glance where one timepoint's block of columns ends and the next begins;
 # panel.spacing.x is widened and each day's panel gets a black outline
 # (panel.border) to the same end.
-robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors = NULL) {
+#
+# @param colorbar_guide Guide for the Signal-robustness fill scale - lets
+#   callers lengthen/resize the colourbar (e.g. the gene-set-level
+#   heatmap's larger legend) without duplicating the whole scale
+#   definition. Defaults to a plain [ggplot2::guide_colorbar()].
+robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors = NULL,
+                                      colorbar_guide = ggplot2::guide_colorbar()) {
   list(
     ggh4x::facet_grid2(
       cols = ggplot2::vars(time), scales = "free_x", space = "free_x",
@@ -115,7 +121,8 @@ robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors
       low = low_colour,
       high = high_colour,
       limits = c(0, 1),
-      trans = power_trans(0.5)
+      trans = power_trans(0.5),
+      guide = colorbar_guide
     ),
     ggplot2::theme_minimal(),
     ggplot2::theme(
@@ -179,35 +186,59 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
 #'   of them, not just the ones actually present).
 #' @param low_colour,high_colour,strip_width See
 #'   [plot_robustness_heatmap_genesets()].
+#' @param page_number,total_pages This page's 1-indexed position and the
+#'   total page count, appended to the plot title as "(page X/N)" so a
+#'   printed/exported page can always be placed back in the sequence.
 #'
 #' @return A patchwork object (aggregate strip + main heatmap, legends
 #'   collected together).
 #' @keywords internal
 build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colour_map,
-                                       low_colour, high_colour, strip_width) {
+                                       low_colour, high_colour, strip_width,
+                                       page_number, total_pages) {
   annotation_data <- dplyr::distinct(plot_data, gs.label, gs.aggregate)
+
+  # Shared sizing so the two legends (Aggregate, Signal-robustness) read
+  # consistently once collected side by side by patchwork.
+  legend_title_size <- 26
+  legend_text_size  <- 20
 
   p_strip <- ggplot2::ggplot(annotation_data, ggplot2::aes(x = 1, y = gs.label, fill = gs.aggregate)) +
     ggplot2::geom_tile() +
     ggplot2::scale_fill_manual(
       name = "Aggregate", values = aggregate_colour_map,
-      limits = names(aggregate_colour_map), drop = FALSE
+      limits = names(aggregate_colour_map), drop = FALSE,
+      guide = ggplot2::guide_legend(
+        keywidth = grid::unit(1, "cm"), keyheight = grid::unit(1, "cm")
+      )
     ) +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
-    ggplot2::theme_void()
+    ggplot2::theme_void() +
+    ggplot2::theme(
+      legend.title = ggplot2::element_text(size = legend_title_size),
+      legend.text  = ggplot2::element_text(size = legend_text_size)
+    )
 
   p_main <- ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.label, fill = robustness)) +
     ggplot2::geom_tile() +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
-    robustness_heatmap_layers(low_colour, high_colour, times = plot_data$time) +
-    ggplot2::labs(x = "Vaccine", y = NULL, title = "Signal-robustness by gene set") +
+    robustness_heatmap_layers(
+      low_colour, high_colour, times = plot_data$time,
+      colorbar_guide = ggplot2::guide_colorbar(
+        barheight = grid::unit(16, "cm"), barwidth = grid::unit(1.4, "cm")
+      )
+    ) +
+    ggplot2::labs(
+      x = "Vaccine", y = NULL,
+      title = sprintf("Signal-robustness by gene set (page %d/%d)", page_number, total_pages)
+    ) +
     ggplot2::theme(axis.text.y = ggplot2::element_text(size = 13),
-                   axis.title.x = ggplot2::element_text(size = 25),
-                   axis.title.y = ggplot2::element_text(size = 25),
-                   plot.title = ggplot2::element_text(size = 25),
+                   axis.title.x = ggplot2::element_text(size = 32),
+                   axis.title.y = ggplot2::element_text(size = 32),
+                   plot.title = ggplot2::element_text(size = 34, face = "bold"),
                    axis.text.x = ggplot2::element_text(size = 15),
-                   legend.title = ggplot2::element_text(size = 18),
-                   legend.text = ggplot2::element_text(size = 15),
+                   legend.title = ggplot2::element_text(size = legend_title_size),
+                   legend.text = ggplot2::element_text(size = legend_text_size),
                   )
 
   patchwork::wrap_plots(p_strip, p_main, ncol = 2, widths = c(strip_width, 20), guides = "collect")
@@ -299,14 +330,19 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
     unname(split(gene_set_order, ceiling(seq_along(gene_set_order) / rows_per_page)))
   }
 
-  lapply(page_gene_sets, function(gene_sets_on_page) {
+  total_pages <- length(page_gene_sets)
+
+  lapply(seq_along(page_gene_sets), function(page_number) {
+    gene_sets_on_page <- page_gene_sets[[page_number]]
     build_geneset_heatmap_page(
       plot_data             = dplyr::filter(plot_data, as.character(gs.label) %in% gene_sets_on_page),
       gene_set_order         = gene_sets_on_page,
       aggregate_colour_map    = aggregate_colour_map,
       low_colour               = low_colour,
       high_colour               = high_colour,
-      strip_width                = strip_width
+      strip_width                = strip_width,
+      page_number               = page_number,
+      total_pages               = total_pages
     )
   })
 }
