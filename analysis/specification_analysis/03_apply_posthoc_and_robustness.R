@@ -40,6 +40,24 @@
 # 02_run_raw_specifications.R is NOT required in this case - it reuses
 # whichever already-computed output/results/specification_analysis/raw/
 # {spec_label}.rds files match the (possibly smaller) new raw grid.
+#
+# COVARIATE-REDUNDANCY DEDUPLICATION (R/specification_redundancy.R): some
+# comparisons (vaccine x timepoint) have no variation in one or more
+# covariates within their paired sample set - e.g. a single contributing
+# study, or an all-"Unknown" gender/race - so dearseq's covariate design
+# matrix collapses and two of the 16 covariate subsets produce
+# byte-identical results for that comparison, even though
+# build_raw_specification_grid() counts them as separate raw
+# specifications. This is detected purely from the already-loaded sample
+# data (build_covariate_matrix() calls only - no re-run of dearseq/qusage
+# model fitting) and used below to drop the redundant duplicate's
+# contribution per comparison, so it isn't double-counted in n_evaluated/
+# n_significant. Like a raw-grid change, this is a change to what counts
+# as "already accumulated": an existing robustness_accumulator_state.rds/
+# robustness_metrics.rds predates this fix and must be deleted before
+# re-running this script to get corrected results (re-running
+# 02_run_raw_specifications.R is NOT required - only already-cached raw
+# results are reprocessed).
 # =============================================================================
 
 # ── Packages ──────────────────────────────────────────────────────────────────
@@ -51,11 +69,18 @@ source(fs::path("R", "load_all.R"))
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-p_data_btm <- fs::path("data", "BTM_processed.rds")
-out_dir    <- fs::path("output", "results", "specification_analysis")
-raw_dir    <- fs::path(out_dir, "raw")
-p_state    <- fs::path(out_dir, "robustness_accumulator_state.rds")
-p_metrics  <- fs::path(out_dir, "robustness_metrics.rds")
+p_data_btm  <- fs::path("data", "BTM_processed.rds")
+p_data_expr <- fs::path("data", "hipc_merged_young_noNorm.rds")
+out_dir     <- fs::path("output", "results", "specification_analysis")
+raw_dir     <- fs::path(out_dir, "raw")
+p_state     <- fs::path(out_dir, "robustness_accumulator_state.rds")
+p_metrics   <- fs::path(out_dir, "robustness_metrics.rds")
+p_spec_totals <- fs::path(out_dir, "effective_specification_totals.csv")
+
+# Must match 02_run_raw_specifications.R's DAYS_TO_ANALYSE - the redundancy
+# detection below (R/specification_redundancy.R) needs the exact same set
+# of comparisons that were actually run.
+DAYS_TO_ANALYSE <- c(1, 3, 7)
 
 # ── Load data + specification grids ─────────────────────────────────────────
 
@@ -66,6 +91,38 @@ posthoc_grid <- readRDS(fs::path(out_dir, "posthoc_specification_grid.rds"))
 alphas          <- sort(unique(posthoc_grid$alpha))
 fc_thresholds   <- sort(unique(posthoc_grid$fc_threshold))
 posthoc_methods <- unique(posthoc_grid$adjustment_method)
+
+# ── Covariate-redundancy detection (no DGSA re-run - see the module-level
+# comment above and R/specification_redundancy.R) ───────────────────────────
+
+# Same vaccine_code/study_accession preprocessing 02_run_raw_specifications.R
+# applies before calling run_dearseq_comparison() - build_covariate_matrix()
+# needs study_accession as a factor to reproduce the real design matrices.
+hipc <- readRDS(p_data_expr) |>
+  dplyr::mutate(
+    vaccine_code    = as.factor(if_else(time_post_last_vax > 0, 2, 1)),
+    study_accession = as.factor(study_accession)
+  )
+
+effective_specs <- effective_raw_specifications(hipc, raw_grid, days = DAYS_TO_ANALYSE)
+
+# One row per (raw_spec_id, comparison) pair whose contribution should be
+# dropped for that comparison specifically - the canonical member of its
+# covariate-equivalence class is kept, so the pair isn't double-counted.
+redundant_lookup <- effective_specs |>
+  dplyr::filter(!is_canonical) |>
+  dplyr::select(raw_spec_id, vaccine_name, day)
+
+message(sprintf(
+  "Covariate-redundancy detection: %d (raw specification x comparison) pair(s) flagged as redundant duplicates.",
+  nrow(redundant_lookup)
+))
+
+spec_totals <- specification_totals(hipc, raw_grid, posthoc_grid, days = DAYS_TO_ANALYSE)
+write.csv(spec_totals, file = p_spec_totals, row.names = FALSE)
+message("Deduplicated per-comparison specification totals saved to: ", p_spec_totals)
+
+rm(hipc)
 
 # ── Load or initialise checkpoint state ─────────────────────────────────────
 
@@ -111,6 +168,30 @@ for (i in seq_len(nrow(raw_grid))) {
   )
 
   if (is.null(tidy_df)) next
+
+  # Coerce unconditionally (not just when redundant_here has rows below) so
+  # `condition`'s type is consistent across every contribution folded into
+  # the accumulator, regardless of which raw specifications happen to have
+  # a redundant duplicate; order_robustness_comparisons() (R/robustness_
+  # heatmaps.R) re-factors it from character downstream anyway.
+  tidy_df <- dplyr::mutate(tidy_df, condition = as.character(condition))
+
+  # Drop this raw specification's rows for any comparison where it's a
+  # covariate-redundant duplicate (see the module-level comment above) -
+  # the canonical member of its equivalence class carries that
+  # comparison's contribution instead, so it's counted exactly once.
+  redundant_here <- dplyr::filter(redundant_lookup, raw_spec_id == spec$raw_spec_id)
+  if (nrow(redundant_here) > 0) {
+    n_before <- nrow(tidy_df)
+    tidy_df <- dplyr::anti_join(
+      tidy_df, redundant_here,
+      by = c("condition" = "vaccine_name", "time" = "day")
+    )
+    message(sprintf(
+      "    Dropped %d row(s) for %d covariate-redundant comparison(s).",
+      n_before - nrow(tidy_df), nrow(redundant_here)
+    ))
+  }
 
   state$accumulator <- accumulate_robustness_counts(
     state$accumulator, tidy_df,
