@@ -357,7 +357,7 @@ purrr::walk2(
   list(p_age,                         p_gender,                         p_race),
   c("study_age_distribution.pdf",    "study_gender_distribution.pdf", "study_race_distribution.pdf"),
   ~ ggsave(filename = .y, path = descriptive_figures_folder,
-           plot = .x, width = 45, height = 20, units = "cm")
+           plot = .x, width = 45, height = 25, units = "cm")
 )
 
 rm(list = ls())
