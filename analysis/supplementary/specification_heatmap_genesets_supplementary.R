@@ -54,7 +54,7 @@ fs::dir_create(out_dir)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-ROWS_PER_PAGE <- 110
+ROWS_PER_PAGE <- 52
 
 GENESET_PAGE_WIDTH_CM  <- 45
 GENESET_PAGE_HEIGHT_CM <- 45 * sqrt(2)  # true A4 ratio (1:1.414), ~63.6cm
@@ -80,4 +80,4 @@ message(sprintf(
   length(p_genesets_pages), p_fig_genesets
 ))
 
-# rm(list = ls())
+rm(list = ls())
