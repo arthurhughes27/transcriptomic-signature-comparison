@@ -12,9 +12,15 @@
 # multi-page PDF (save_multi_page_pdf(), R/plot_helpers.R) rather than one
 # very tall page, so every page is a normal, consistently-sized page
 # instead of requiring heavy zooming. Pages are sized to
-# GENESET_PAGE_WIDTH_CM/HEIGHT_CM below, with ROWS_PER_PAGE calibrated so
-# 45 gene sets - full names/descriptions, readable at the row height that
-# implies - fill exactly one page.
+# GENESET_PAGE_WIDTH_CM/HEIGHT_CM below, calibrated to the true A4 aspect
+# ratio (1:sqrt(2)) at GENESET_PAGE_WIDTH_CM's scale rather than a literal
+# 21x29.7cm sheet, so the wide comparison-column layout still has room.
+# ROWS_PER_PAGE is scaled to match: at the previous 45cm x 40cm page,
+# 45 rows only filled ~60% of the page height (row density ~0.53cm/row);
+# ROWS_PER_PAGE below targets ~92% fill of the new, taller page at that
+# same row density/text size - full names/descriptions, at the same
+# readable row height as before, just more of them per page. Re-tune if a
+# generated page over/underfills once you can see the actual PDF.
 #
 # Safe to run against partial results (e.g. while
 # 02_run_raw_specifications.R / 03_apply_posthoc_and_robustness.R are still
@@ -48,10 +54,10 @@ fs::dir_create(out_dir)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-ROWS_PER_PAGE <- 45
+ROWS_PER_PAGE <- 110
 
 GENESET_PAGE_WIDTH_CM  <- 45
-GENESET_PAGE_HEIGHT_CM <- 40
+GENESET_PAGE_HEIGHT_CM <- 45 * sqrt(2)  # true A4 ratio (1:1.414), ~63.6cm
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
