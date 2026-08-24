@@ -169,30 +169,25 @@ for (i in seq_len(nrow(raw_grid))) {
 
   if (is.null(tidy_df)) next
 
-  # Coerce unconditionally (not just when redundant_here has rows below) so
-  # `condition`/`time`'s types are consistent across every contribution
-  # folded into the accumulator, regardless of which raw specifications
-  # happen to have a redundant duplicate. build_tidy_dgsa_results()
-  # (R/postprocessing.R) returns `condition` and `time` as factors;
-  # order_robustness_comparisons() (R/robustness_heatmaps.R) re-derives
-  # both from character/numeric downstream anyway, so this is safe.
-  tidy_df <- dplyr::mutate(
-    tidy_df,
-    condition = as.character(condition),
-    time      = as.numeric(as.character(time))
-  )
-
   # Drop this raw specification's rows for any comparison where it's a
   # covariate-redundant duplicate (see the module-level comment above) -
   # the canonical member of its equivalence class carries that
   # comparison's contribution instead, so it's counted exactly once.
+  #
+  # Matched via a temporary character/numeric key rather than an
+  # anti_join() on tidy_df's own condition/time columns directly:
+  # build_tidy_dgsa_results() (R/postprocessing.R) returns both as
+  # factors, and mutating their type here would silently change
+  # robustness_metrics.rds's schema for every downstream consumer that
+  # expects condition/time in that same factor shape - notably
+  # R/baseline_results.R's join_robustness_baseline(), which inner_joins
+  # robustness_metrics against baseline_df's (also factor) condition/time.
   redundant_here <- dplyr::filter(redundant_lookup, raw_spec_id == spec$raw_spec_id)
   if (nrow(redundant_here) > 0) {
+    tidy_key      <- paste(as.character(tidy_df$condition), as.numeric(as.character(tidy_df$time)), sep = "\r")
+    redundant_key <- paste(redundant_here$vaccine_name, redundant_here$day, sep = "\r")
     n_before <- nrow(tidy_df)
-    tidy_df <- dplyr::anti_join(
-      tidy_df, redundant_here,
-      by = c("condition" = "vaccine_name", "time" = "day")
-    )
+    tidy_df  <- tidy_df[!tidy_key %in% redundant_key, ]
     message(sprintf(
       "    Dropped %d row(s) for %d covariate-redundant comparison(s).",
       n_before - nrow(tidy_df), nrow(redundant_here)
