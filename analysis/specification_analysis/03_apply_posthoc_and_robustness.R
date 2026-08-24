@@ -132,6 +132,24 @@ state <- if (file_exists(p_state)) {
   list(accumulator = NULL, processed_spec_ids = integer(0))
 }
 
+# Guard against a checkpoint written by a since-fixed bug (e.g. an earlier
+# version of the redundancy-deduplication code above briefly stored `time`
+# as numeric instead of the factor build_tidy_dgsa_results() produces,
+# which downstream consumers - R/baseline_results.R's
+# join_robustness_baseline() among them - require). Resuming from such a
+# checkpoint would silently re-derive robustness_metrics.rds from the same
+# wrong-typed accumulator without ever reprocessing anything, since every
+# raw specification is already marked "processed" - so fail loudly here
+# instead of letting the bad type propagate to a confusing error much
+# later, in a different script.
+if (!is.null(state$accumulator) && !is.factor(state$accumulator$time)) {
+  stop(
+    "robustness_accumulator_state.rds has `time` as ", class(state$accumulator$time)[1],
+    ", not the expected factor - it was written by a since-fixed bug and is stale.\n",
+    "Delete ", p_state, " and ", p_metrics, ", then re-run this script from scratch."
+  )
+}
+
 # =============================================================================
 # FOLD EACH RAW SPECIFICATION'S RESULTS INTO THE ACCUMULATOR
 # =============================================================================
