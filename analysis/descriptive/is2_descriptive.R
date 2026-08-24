@@ -6,7 +6,7 @@
 # x-axis, bubble size proportional to the number of transcriptomic samples
 # available for that vaccine x timepoint combination (summed across every
 # contributing study). The per-study equivalent of this figure has been
-# moved to Appendix A (analysis/descriptive/is2_appendix_descriptives.R),
+# moved to Appendix A (analysis/descriptive/is2_supplementary_descriptives.R),
 # since a reader wants the vaccine-level picture first.
 #
 # The days actually used in the DGSA analysis grid (DAYS_TO_HIGHLIGHT,

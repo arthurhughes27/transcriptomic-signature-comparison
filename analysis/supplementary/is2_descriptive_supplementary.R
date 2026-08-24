@@ -25,8 +25,8 @@ source(fs::path("R", "load_all.R"))
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 processed_data_folder      <- "data"
-descriptive_figures_folder <- fs::path("output", "figures", "descriptive")
-descriptive_tables_folder  <- fs::path("output", "tables", "descriptive")
+descriptive_figures_folder <- fs::path("output", "figures", "supplementary")
+descriptive_tables_folder  <- fs::path("output", "tables", "supplementary")
 
 fs::dir_create(descriptive_figures_folder)
 fs::dir_create(descriptive_tables_folder)

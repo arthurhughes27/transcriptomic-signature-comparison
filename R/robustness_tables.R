@@ -8,7 +8,7 @@
 # the original study's conclusion is most fragile to analytical choices.
 # Both use the full geneset.names.descriptions label rather than the short
 # gs.name code, and are written out as LaTeX tables (knitr::kable(),
-# matching the convention in analysis/descriptive/is2_appendix_descriptives.R)
+# matching the convention in analysis/descriptive/is2_supplementary_descriptives.R)
 # ready to \input{} directly into the thesis.
 # =============================================================================
 
@@ -121,7 +121,7 @@ build_significant_nonrobust_table <- function(robustness_df, baseline_df, genese
 #' Save a table as a LaTeX-ready .tex file (and a .csv for reference)
 #'
 #' Mirrors the convention in
-#' analysis/descriptive/is2_appendix_descriptives.R: `knitr::kable()` with
+#' analysis/descriptive/is2_supplementary_descriptives.R: `knitr::kable()` with
 #' `format = "latex"`, `booktabs = TRUE`, `longtable = TRUE`.
 #'
 #' @param df Tibble to render (typically the output of
