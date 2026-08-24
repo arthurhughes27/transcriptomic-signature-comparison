@@ -57,4 +57,4 @@ ggsave(
 )
 message("Saved aggregate-level robustness heatmap to: ", p_fig_aggregate)
 
-# rm(list = ls())
+rm(list = ls())
