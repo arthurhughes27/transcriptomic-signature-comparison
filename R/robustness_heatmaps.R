@@ -235,7 +235,8 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
 #' same row height and the same comparison columns, so pages are directly
 #' comparable and consistently sized regardless of how large the aggregate
 #' they happen to fall in is. Save the result with [save_multi_page_pdf()] -
-#' the driver script (04_specification_heatmaps.R) pairs the default
+#' the driver scripts (04_specification_heatmap_aggregate.R and
+#' analysis/supplementary/specification_heatmap_genesets_supplementary.R) pair the default
 #' `rows_per_page` with an A4 page size so each page prints at a readable
 #' row height.
 #'

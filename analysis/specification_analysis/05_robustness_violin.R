@@ -4,7 +4,7 @@
 # Shows the full distribution of robustness across the 258 gene sets for
 # each comparison (output/results/specification_analysis/
 # robustness_metrics.rds), laid out exactly as the heatmaps in
-# 04_specification_heatmaps.R: comparisons split into facets by timepoint,
+# 04_specification_heatmap_aggregate.R: comparisons split into facets by timepoint,
 # ordered within each facet by vaccine.
 #
 # Safe to run against partial robustness_metrics.rds results (e.g. while

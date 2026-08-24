@@ -42,7 +42,7 @@ hipc_merged_all_norm <- readRDS(
 )
 
 # Study order fixed at preprocessing time (grouped by vaccine); kept in sync
-# with is2_bubble_plot.R by reading the same underlying factor levels rather
+# with is2_descriptive.R by reading the same underlying factor levels rather
 # than deriving order from a rendered plot.
 study_order <- levels(hipc_merged_all_norm$study_accession_unique)
 
@@ -104,7 +104,7 @@ vaccine_legend_layer <- function(df) {
 # BUBBLE PLOT: SAMPLE COUNTS PER STUDY x TIMEPOINT
 # =============================================================================
 # The per-study companion to the main-text vaccine-level bubble plot
-# (analysis/descriptive/is2_bubble_plot.R): studies on the y-axis (coloured
+# (analysis/descriptive/is2_descriptive.R): studies on the y-axis (coloured
 # by vaccine), days post-vaccination on the x-axis, bubble size
 # proportional to the number of transcriptomic samples available for that
 # study x timepoint combination. Moved here from the main text so the
