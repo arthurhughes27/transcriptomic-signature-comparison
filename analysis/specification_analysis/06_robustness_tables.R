@@ -10,7 +10,7 @@
 # Both use the full geneset.names.descriptions label (R/robustness_tables.R).
 # Output written to output/tables/specification_analysis/ as .tex (ready to
 # \input{} into the thesis) and .csv (for reference), matching the
-# convention in analysis/descriptive/is2_supplementary_descriptives.R.
+# convention in analysis/supplementary/is2_descriptive_supplementary.R.
 #
 # Baseline results are read directly from the raw specification-grid
 # outputs (R/baseline_results.R) - the same runs the robustness metric
