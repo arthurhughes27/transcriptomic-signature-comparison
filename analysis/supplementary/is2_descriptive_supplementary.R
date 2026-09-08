@@ -148,7 +148,7 @@ p_study_bubble <- ggplot(study_bubble_counts, aes(x = time_post_last_vax, y = st
     guide  = guide_legend(override.aes = list(shape = 21, size = 6, colour = "black"))
   ) +
   scale_size_area(
-    name     = "Count",
+    name     = "Samples",
     max_size = 28,
     breaks   = study_bubble_size_breaks,
     labels   = study_bubble_size_breaks_counts,

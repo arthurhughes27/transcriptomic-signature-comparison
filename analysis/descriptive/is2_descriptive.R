@@ -80,7 +80,7 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
   ) +
   scale_fill_manual(values = setNames(counts$vaccine_colour, counts$vaccine_name)) +
   scale_size_area(
-    name     = "Count",
+    name     = "Samples",
     max_size = 28,
     breaks   = size_breaks,
     labels   = size_breaks_counts,

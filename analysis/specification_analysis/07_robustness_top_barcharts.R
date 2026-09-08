@@ -62,7 +62,7 @@ print(p_barcharts)
 # taller overall for the bars themselves to stay readable.
 ggsave(
   filename = p_fig, plot = p_barcharts,
-  width = 40, height = 50, units = "cm", limitsize = FALSE
+  width = 40, height = 35, units = "cm", limitsize = FALSE
 )
 message("Saved top-robustness gene set bar charts to: ", p_fig)
 
