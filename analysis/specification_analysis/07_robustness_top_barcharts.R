@@ -55,9 +55,14 @@ p_barcharts <- plot_top_robust_barcharts(robustness_metrics, BTM, n = TOP_N_PER_
 
 print(p_barcharts)
 
+# Taller than the earlier version: the y-axis headroom reserved for the
+# now-vertical gene-set-name labels (plot_top_robust_barchart_day()'s
+# scale_y_continuous(expand = ...)) means the 0-1 robustness bars only
+# occupy a fraction of each panel's height, so the panels need to be much
+# taller overall for the bars themselves to stay readable.
 ggsave(
   filename = p_fig, plot = p_barcharts,
-  width = 35, height = 45, units = "cm", limitsize = FALSE
+  width = 40, height = 80, units = "cm", limitsize = FALSE
 )
 message("Saved top-robustness gene set bar charts to: ", p_fig)
 
