@@ -92,6 +92,11 @@ build_top_robust_by_comparison <- function(robustness_df, genesets,
 #'   to a single `time` level.
 #' @param vaccine_colour_map Named vector, vaccine name -> hex colour (see
 #'   [plot_top_robust_barcharts()]).
+#' @param show_vaccine_labels Show the vaccine-name x-axis text/ticks for
+#'   this panel? FALSE for every panel but the bottom one (see
+#'   [plot_top_robust_barcharts()]) - the vaccines line up identically
+#'   across every panel regardless (`scale_x_discrete(drop = FALSE)`), so
+#'   only the bottom panel needs to spell them out.
 #'
 #' @return A ggplot object: one dodged bar per gene set, grouped by vaccine,
 #'   with a shaded day-coloured title strip ([day_facet_strip()]). Vaccines
@@ -102,7 +107,7 @@ build_top_robust_by_comparison <- function(robustness_df, genesets,
 #'   each bar have room to render without being clipped, even for a bar at
 #'   robustness = 1.
 #' @keywords internal
-plot_top_robust_barchart_day <- function(day_data, vaccine_colour_map) {
+plot_top_robust_barchart_day <- function(day_data, vaccine_colour_map, show_vaccine_labels = TRUE) {
   dw <- 0.85
 
   ggplot2::ggplot(day_data, ggplot2::aes(x = condition, y = robustness)) +
@@ -133,12 +138,17 @@ plot_top_robust_barchart_day <- function(day_data, vaccine_colour_map) {
       panel.grid.minor = ggplot2::element_blank(),
       panel.border      = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
       strip.text         = ggplot2::element_text(face = "bold", size = 20),
-      axis.text.x         = ggplot2::element_text(size = 18, angle = 45, hjust = 1),
-      axis.text.y          = ggplot2::element_text(size = 16),
-      axis.title             = ggplot2::element_text(size = 22),
-      plot.margin              = grid::unit(c(10, 10, 5, 5), "pt")
+      axis.text.x          = if (show_vaccine_labels) {
+        ggplot2::element_text(size = 18, angle = 45, hjust = 1)
+      } else {
+        ggplot2::element_blank()
+      },
+      axis.ticks.x           = if (show_vaccine_labels) ggplot2::element_line() else ggplot2::element_blank(),
+      axis.text.y              = ggplot2::element_text(size = 16),
+      axis.title.y               = ggplot2::element_text(size = 22),
+      plot.margin                  = grid::unit(c(10, 10, 5, 5), "pt")
     ) +
-    ggplot2::labs(x = "Vaccine", y = "Signal-robustness")
+    ggplot2::labs(x = NULL, y = "Signal-robustness")
 }
 
 #' Plot the top-N-per-comparison robustness bar charts, one per timepoint
@@ -173,8 +183,11 @@ plot_top_robust_barcharts <- function(robustness_df, genesets,
 
   day_levels <- levels(top_data$time)
 
-  day_plots <- lapply(day_levels, function(d) {
-    plot_top_robust_barchart_day(dplyr::filter(top_data, time == d), vaccine_colour_map)
+  day_plots <- lapply(seq_along(day_levels), function(i) {
+    plot_top_robust_barchart_day(
+      dplyr::filter(top_data, time == day_levels[i]), vaccine_colour_map,
+      show_vaccine_labels = (i == length(day_levels))
+    )
   })
 
   patchwork::wrap_plots(day_plots, ncol = 1) +
