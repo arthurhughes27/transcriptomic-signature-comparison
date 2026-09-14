@@ -78,7 +78,11 @@ btm_aggregates <- c(
   "Plasma Cells"
 )
 
-# Arguments shared across every plot_circos call
+# Arguments shared across every plot_circos call. title_size/title_line are
+# deliberately NOT here (unlike the earlier version) - render_row() below
+# passes them explicitly on every call so render_comparison_pdf() can
+# override them without colliding with this list (do.call() errors on a
+# name present in both circos_defaults and the override list).
 circos_defaults <- list(
   conditions         = levels(results_df$condition),
   aggregates_name    = btm_aggregates,
@@ -94,9 +98,7 @@ circos_defaults <- list(
   ring               = "expression",
   order              = "set_all",
   quantile_scoreclip = 0.995,
-  legend             = FALSE,
-  title_size         = 6,
-  title_line         = -4
+  legend             = FALSE
 )
 
 # =============================================================================
@@ -605,6 +607,13 @@ draw_circos_legend <- function(aggregates_name,
     distinct() %>%
     { setNames(.$gs.colour, .$gs.aggregate) }
   
+  # Header/title tier bumped well above the item tier (2.3 vs 1.2, was 1.5
+  # vs 1.2) so the section titles read as clearly bigger than the items,
+  # per the request - the item tier (and therefore the current, already
+  # correctly-sized item text) is untouched.
+  title_tier <- 2.3
+  item_tier  <- 1.2
+
   # Build label / colour / spacing vectors depending on ring type
   if (ring == "all") {
     legend_labels      <- c(
@@ -613,28 +622,37 @@ draw_circos_legend <- function(aggregates_name,
       expression(bold("Correlation with Ab Response")), "Positive", "Negative"
     )
     legend_colours     <- c(NA, aggregate_colors[aggregates_name], NA, "red", "blue", NA, "purple", "orange")
-    legend_cex_base    <- c(1.5, rep(1.2, length(aggregates_name)), 1.5, 1.2, 1.2, 1.5, 1.2, 1.2)
-    legend_yisp_base   <- c(1,   rep(0.8, length(aggregates_name)), 1.5, 0.8, 0.8, 1.5, 0.8, 0.8)
-    
+    legend_cex_base    <- c(title_tier, rep(item_tier, length(aggregates_name)), title_tier, item_tier, item_tier, title_tier, item_tier, item_tier)
+    legend_yisp_base   <- c(1,          rep(0.8, length(aggregates_name)),       1.5,        0.8,       0.8,       1.5,        0.8,       0.8)
+
   } else if (ring == "expression") {
     legend_labels      <- c(
       expression(bold("Gene Set Aggregate")), aggregates_name,
       expression(bold("Direction of Regulation")), "Upregulated", "Downregulated"
     )
     legend_colours     <- c(NA, aggregate_colors[aggregates_name], NA, "red", "blue")
-    legend_cex_base    <- c(1.5, rep(1.2, length(aggregates_name)), 1.5, 1.2, 1.2)
-    legend_yisp_base   <- c(1,   rep(0.8, length(aggregates_name)), 1.5, 0.8, 0.8)
-    
+    legend_cex_base    <- c(title_tier, rep(item_tier, length(aggregates_name)), title_tier, item_tier, item_tier)
+    legend_yisp_base   <- c(1,          rep(0.8, length(aggregates_name)),       1.5,        0.8,       0.8)
+
   } else {
     legend_labels      <- c(expression(bold("Gene Set Aggregate")), aggregates_name)
     legend_colours     <- c(NA, aggregate_colors[aggregates_name])
-    legend_cex_base    <- c(1.5, rep(1.2, length(aggregates_name)))
-    legend_yisp_base   <- c(1,   rep(0.8, length(aggregates_name)))
+    legend_cex_base    <- c(title_tier, rep(item_tier, length(aggregates_name)))
+    legend_yisp_base   <- c(1,          rep(0.8, length(aggregates_name)))
   }
-  
+
   legend_cex  <- legend_cex_base  * scale * font_scale
-  legend_yisp <- legend_yisp_base * scale * font_scale
-  text_width  <- 1.2 * max(strwidth(legend_labels, cex = max(legend_cex)))
+  # y.intersp is a multiplier ON TOP OF the natural (already cex-scaled)
+  # line height - scaling it by `scale` as well as `legend_cex` compounded
+  # the effect of `scale` roughly quadratically, which is what was pushing
+  # the whole legend block taller than its row and clipping the top/bottom
+  # once `scale` grew past ~1.5. Only font_scale (defaults to 1, and never
+  # actually varied by any caller) applies here now - text size (legend_cex)
+  # is unaffected by this change.
+  legend_yisp <- legend_yisp_base * font_scale
+  # Less padding (was 1.2x) now that the legend has its own wider column -
+  # this was contributing unnecessary extra width on top of the actual text.
+  text_width  <- 1.05 * max(strwidth(legend_labels, cex = max(legend_cex)))
   
   if (placeholder) {
     legend(
@@ -705,7 +723,9 @@ render_row <- function(day,
                        dearseq_title = NULL,
                        day_colour     = NULL,
                        condition_label_cex = 1.5,
-                       canvas_lim          = c(-1.2, 1.2)) {
+                       canvas_lim          = c(-1.2, 1.2),
+                       title_size            = 6,
+                       title_line              = -4) {
   plot_row_annotation(paste0("Day ", day), size = 6, fill_colour = day_colour)
 
   circos.clear()
@@ -715,7 +735,9 @@ render_row <- function(day,
     arc         = arc,
     plot_title  = qusage_title,
     condition_label_cex = condition_label_cex,
-    canvas_lim          = canvas_lim
+    canvas_lim          = canvas_lim,
+    title_size          = title_size,
+    title_line          = title_line
   )
 
   circos.clear()
@@ -725,7 +747,9 @@ render_row <- function(day,
     arc         = arc,
     plot_title  = dearseq_title,
     condition_label_cex = condition_label_cex,
-    canvas_lim          = canvas_lim
+    canvas_lim          = canvas_lim,
+    title_size          = title_size,
+    title_line          = title_line
   )
   
   plot.new()
@@ -782,14 +806,21 @@ render_single_day_pdf <- function(filename, day, arc) {
 render_comparison_pdf <- function(filename, arc) {
   CIRCOS_LABEL_CEX <- 1.9
   CIRCOS_CANVAS_LIM <- c(-1.13, 1.13)
+  CIRCOS_TITLE_SIZE <- 9
 
   pdf(fs::path(figures_folder, filename), width = 27, height = 32)
   on.exit(dev.off())
 
   # 5 layout rows: day 1 / spacer / day 3 / spacer / day 7
+  # Annotation column restored to its original 0.1 - narrower (0.06)
+  # clipped the "Day X" text, which is unchanged in size and just needs
+  # its original room back. Legend column widened from the earlier 0.18
+  # (which combined with the bigger legend_scale below to clip the legend
+  # on every side) to 0.30 - still narrower than the pre-PR-47 0.35, so
+  # the circos columns keep a real (if smaller than first attempted) gain.
   layout(
     matrix(c(1:4, rep(0, 4), 5:8, rep(0, 4), 9:12), nrow = 5, ncol = 4, byrow = TRUE),
-    widths  = c(0.06, 0.42, 0.42, 0.18),
+    widths  = c(0.1, 0.40, 0.40, 0.30),
     heights = c(0.33, 0.02, 0.33, 0.02, 0.33)
   )
   par(mar = rep(0, 4))
@@ -797,13 +828,16 @@ render_comparison_pdf <- function(filename, arc) {
   render_row(1, arc, legend_placeholder = TRUE,  legend_scale = 1.6,
              qusage_title = "QuSAGE", dearseq_title = "dearseq",
              day_colour = circos_day_colours[["Day 1"]],
-             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM)
+             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM,
+             title_size = CIRCOS_TITLE_SIZE)
   render_row(3, arc, legend_placeholder = FALSE, legend_scale = 1.9,
              day_colour = circos_day_colours[["Day 3"]],
-             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM)
+             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM,
+             title_size = CIRCOS_TITLE_SIZE)
   render_row(7, arc, legend_placeholder = TRUE,  legend_scale = 1.6,
              day_colour = circos_day_colours[["Day 7"]],
-             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM)
+             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM,
+             title_size = CIRCOS_TITLE_SIZE)
 }
 
 # =============================================================================
