@@ -125,7 +125,9 @@ plot_circos <- function(method_name,
                         legend             = TRUE,
                         plot_title         = NULL,
                         title_size         = 2.5,
-                        title_line         = 0) {
+                        title_line         = 0,
+                        condition_label_cex = 1.5,
+                        canvas_lim          = c(-1.2, 1.2)) {
   
   # Subset to selected method, conditions, and aggregates
   results_df_circos <- results_df %>%
@@ -353,7 +355,7 @@ plot_circos <- function(method_name,
     start.degree  = 81,
     gap.degree    = 2
   )
-  circos.par("canvas.xlim" = c(-1.2, 1.2), "canvas.ylim" = c(-1.2, 1.2))
+  circos.par("canvas.xlim" = canvas_lim, "canvas.ylim" = canvas_lim)
   
   circos.initialize(
     factors = condition_circos_metadata$condition,
@@ -389,7 +391,7 @@ plot_circos <- function(method_name,
           y          = ylim[2] + 0.4,
           labels     = name,
           facing     = "bending.outside",   # curves letters along the arc
-          cex        = 1.5,
+          cex        = condition_label_cex,
           adj        = c(0.5, 0.5),
           niceFacing = TRUE,                 # flips text on the bottom half so it reads naturally
           col        = condition_circos_metadata[[text_var]][i]
@@ -701,23 +703,29 @@ render_row <- function(day,
                        legend_scale  = 1.3,
                        qusage_title  = NULL,
                        dearseq_title = NULL,
-                       day_colour     = NULL) {
+                       day_colour     = NULL,
+                       condition_label_cex = 1.5,
+                       canvas_lim          = c(-1.2, 1.2)) {
   plot_row_annotation(paste0("Day ", day), size = 6, fill_colour = day_colour)
-  
+
   circos.clear()
   plot_circos_default(
     method_name = "qusage",
     timepoint   = day,
     arc         = arc,
-    plot_title  = qusage_title
+    plot_title  = qusage_title,
+    condition_label_cex = condition_label_cex,
+    canvas_lim          = canvas_lim
   )
-  
+
   circos.clear()
   plot_circos_default(
     method_name = "dearseq",
     timepoint   = day,
     arc         = arc,
-    plot_title  = dearseq_title
+    plot_title  = dearseq_title,
+    condition_label_cex = condition_label_cex,
+    canvas_lim          = canvas_lim
   )
   
   plot.new()
@@ -758,25 +766,44 @@ render_single_day_pdf <- function(filename, day, arc) {
 # Open a comparison PDF (3 rows × 4 columns) and render days 1, 3, 7, with
 # a blank spacer row between each day's row for visual separation.
 # The legend is shown on day 3 and blank on days 1 and 7.
+#
+# Column widths are reallocated relative to the single-day layout - the
+# annotation ("Day X") and legend columns are narrower, and the two circos
+# columns correspondingly wider, so the circles themselves (and therefore
+# the vaccine sector-label text, at CIRCOS_LABEL_CEX below) can be bigger.
+# canvas_lim is also tightened slightly so less of each circos panel is
+# spent on blank margin, closing up some of the horizontal gap between the
+# two circles. The PDF height is increased relative to its (unchanged)
+# width so panels grow taller as well as wider - the row/spacer height
+# *proportions* are unchanged, so the vertical rhythm between days looks
+# the same, just at a bigger absolute size (this figure occupies a full
+# page in the thesis regardless, so a taller aspect ratio just uses more
+# of that page instead of being capped by width).
 render_comparison_pdf <- function(filename, arc) {
-  pdf(fs::path(figures_folder, filename), width = 27, height = 26)
+  CIRCOS_LABEL_CEX <- 1.9
+  CIRCOS_CANVAS_LIM <- c(-1.13, 1.13)
+
+  pdf(fs::path(figures_folder, filename), width = 27, height = 32)
   on.exit(dev.off())
 
   # 5 layout rows: day 1 / spacer / day 3 / spacer / day 7
   layout(
     matrix(c(1:4, rep(0, 4), 5:8, rep(0, 4), 9:12), nrow = 5, ncol = 4, byrow = TRUE),
-    widths  = c(0.1, 0.35, 0.35, 0.35),
+    widths  = c(0.06, 0.42, 0.42, 0.18),
     heights = c(0.33, 0.02, 0.33, 0.02, 0.33)
   )
   par(mar = rep(0, 4))
 
-  render_row(1, arc, legend_placeholder = TRUE,  legend_scale = 1.3,
+  render_row(1, arc, legend_placeholder = TRUE,  legend_scale = 1.6,
              qusage_title = "QuSAGE", dearseq_title = "dearseq",
-             day_colour = circos_day_colours[["Day 1"]])
-  render_row(3, arc, legend_placeholder = FALSE, legend_scale = 1.5,
-             day_colour = circos_day_colours[["Day 3"]])
-  render_row(7, arc, legend_placeholder = TRUE,  legend_scale = 1.3,
-             day_colour = circos_day_colours[["Day 7"]])
+             day_colour = circos_day_colours[["Day 1"]],
+             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM)
+  render_row(3, arc, legend_placeholder = FALSE, legend_scale = 1.9,
+             day_colour = circos_day_colours[["Day 3"]],
+             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM)
+  render_row(7, arc, legend_placeholder = TRUE,  legend_scale = 1.6,
+             day_colour = circos_day_colours[["Day 7"]],
+             condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM)
 }
 
 # =============================================================================
