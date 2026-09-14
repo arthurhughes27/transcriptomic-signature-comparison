@@ -785,19 +785,19 @@ render_comparison_pdf <- function(filename, arc) {
 
 # Multi-day comparison figures
 render_comparison_pdf("circos_comparison.pdf",          arc = "positive")
-render_comparison_pdf("circos_comparison_negative.pdf", arc = "negative")
-
-# Single-day figures
-single_day_configs <- tribble(
-  ~filename,                   ~day, ~arc,
-  "circos_day1.pdf",           1,    "positive",
-  "circos_day3.pdf",           3,    "positive",
-  "circos_day7.pdf",           7,    "positive",
-  "circos_day1_negative.pdf",  1,    "negative",
-  "circos_day3_negative.pdf",  3,    "negative",
-  "circos_day7_negative.pdf",  7,    "negative"
-)
-
-purrr::pwalk(single_day_configs, render_single_day_pdf)
+# render_comparison_pdf("circos_comparison_negative.pdf", arc = "negative")
+# 
+# # Single-day figures
+# single_day_configs <- tribble(
+#   ~filename,                   ~day, ~arc,
+#   "circos_day1.pdf",           1,    "positive",
+#   "circos_day3.pdf",           3,    "positive",
+#   "circos_day7.pdf",           7,    "positive",
+#   "circos_day1_negative.pdf",  1,    "negative",
+#   "circos_day3_negative.pdf",  3,    "negative",
+#   "circos_day7_negative.pdf",  7,    "negative"
+# )
+# 
+# purrr::pwalk(single_day_configs, render_single_day_pdf)
 
 rm(list = ls())
