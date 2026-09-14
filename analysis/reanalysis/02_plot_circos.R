@@ -129,7 +129,8 @@ plot_circos <- function(method_name,
                         title_size         = 2.5,
                         title_line         = 0,
                         condition_label_cex = 1.5,
-                        canvas_lim          = c(-1.2, 1.2)) {
+                        canvas_lim          = c(-1.2, 1.2),
+                        gap_degree            = 2) {
   
   # Subset to selected method, conditions, and aggregates
   results_df_circos <- results_df %>%
@@ -355,7 +356,7 @@ plot_circos <- function(method_name,
     cell.padding  = c(0, 0, 0, 0),
     track.margin  = c(0, 0.01),
     start.degree  = 81,
-    gap.degree    = 2
+    gap.degree    = gap_degree
   )
   circos.par("canvas.xlim" = canvas_lim, "canvas.ylim" = canvas_lim)
   
@@ -650,10 +651,18 @@ draw_circos_legend <- function(aggregates_name,
   # actually varied by any caller) applies here now - text size (legend_cex)
   # is unaffected by this change.
   legend_yisp <- legend_yisp_base * font_scale
-  # Less padding (was 1.2x) now that the legend has its own wider column -
-  # this was contributing unnecessary extra width on top of the actual text.
-  text_width  <- 1.05 * max(strwidth(legend_labels, cex = max(legend_cex)))
-  
+  # Reverted to the original 1.2x padding (had briefly tried 1.05x, which
+  # didn't fix the reported left-side clipping - text.width already
+  # over-estimates every label's width anyway, since it's measured at
+  # max(legend_cex), i.e. the title tier, even for item-tier labels).
+  text_width  <- 1.2 * max(strwidth(legend_labels, cex = max(legend_cex)))
+
+  # xjust = 0.5 (was 0, i.e. left-justified: the box's left edge - not its
+  # centre - anchored at the "center" position, so it only ever grew
+  # rightward). Centering the box on its column's own midpoint means any
+  # residual overflow (if the legend is still wider than its column) is
+  # split evenly on both sides rather than concentrated entirely on the
+  # left, which is what was being clipped.
   if (placeholder) {
     legend(
       "center",
@@ -663,7 +672,7 @@ draw_circos_legend <- function(aggregates_name,
       cex        = legend_cex,
       y.intersp  = legend_yisp,
       text.width = text_width,
-      ncol       = 1, bty = "n", xjust = 0,
+      ncol       = 1, bty = "n", xjust = 0.5,
       text.col   = rep(NA, length(legend_labels)),
       title      = NULL
     )
@@ -676,7 +685,7 @@ draw_circos_legend <- function(aggregates_name,
       cex        = legend_cex,
       y.intersp  = legend_yisp,
       text.width = text_width,
-      ncol       = 1, bty = "n", xjust = 0,
+      ncol       = 1, bty = "n", xjust = 0.5,
       text.col   = rep("black", length(legend_labels)),
       title      = NULL
     )
@@ -725,7 +734,8 @@ render_row <- function(day,
                        condition_label_cex = 1.5,
                        canvas_lim          = c(-1.2, 1.2),
                        title_size            = 6,
-                       title_line              = -4) {
+                       title_line              = -4,
+                       gap_degree                = 2) {
   plot_row_annotation(paste0("Day ", day), size = 6, fill_colour = day_colour)
 
   circos.clear()
@@ -737,7 +747,8 @@ render_row <- function(day,
     condition_label_cex = condition_label_cex,
     canvas_lim          = canvas_lim,
     title_size          = title_size,
-    title_line          = title_line
+    title_line          = title_line,
+    gap_degree          = gap_degree
   )
 
   circos.clear()
@@ -749,7 +760,8 @@ render_row <- function(day,
     condition_label_cex = condition_label_cex,
     canvas_lim          = canvas_lim,
     title_size          = title_size,
-    title_line          = title_line
+    title_line          = title_line,
+    gap_degree          = gap_degree
   )
   
   plot.new()
@@ -804,23 +816,24 @@ render_single_day_pdf <- function(filename, day, arc) {
 # page in the thesis regardless, so a taller aspect ratio just uses more
 # of that page instead of being capped by width).
 render_comparison_pdf <- function(filename, arc) {
-  CIRCOS_LABEL_CEX <- 1.9
+  CIRCOS_LABEL_CEX <- 1.8
   CIRCOS_CANVAS_LIM <- c(-1.13, 1.13)
   CIRCOS_TITLE_SIZE <- 9
+  CIRCOS_GAP_DEGREE <- 1.5
 
   pdf(fs::path(figures_folder, filename), width = 27, height = 32)
   on.exit(dev.off())
 
   # 5 layout rows: day 1 / spacer / day 3 / spacer / day 7
-  # Annotation column restored to its original 0.1 - narrower (0.06)
-  # clipped the "Day X" text, which is unchanged in size and just needs
-  # its original room back. Legend column widened from the earlier 0.18
-  # (which combined with the bigger legend_scale below to clip the legend
-  # on every side) to 0.30 - still narrower than the pre-PR-47 0.35, so
-  # the circos columns keep a real (if smaller than first attempted) gain.
+  # Annotation column restored to its original 0.1. Legend column widened
+  # again, from 0.30 back to 0.38 - close to its original 30.4% share of
+  # total column width (0.35/1.15) rather than the two earlier, too-narrow
+  # attempts (0.18, then 0.30) that both still clipped the legend at its
+  # bigger text size; circos columns given back proportionally (0.40 -> 0.38
+  # each) to compensate, still a real gain over the original 0.35 each.
   layout(
     matrix(c(1:4, rep(0, 4), 5:8, rep(0, 4), 9:12), nrow = 5, ncol = 4, byrow = TRUE),
-    widths  = c(0.1, 0.40, 0.40, 0.30),
+    widths  = c(0.1, 0.38, 0.38, 0.38),
     heights = c(0.33, 0.02, 0.33, 0.02, 0.33)
   )
   par(mar = rep(0, 4))
@@ -829,15 +842,15 @@ render_comparison_pdf <- function(filename, arc) {
              qusage_title = "QuSAGE", dearseq_title = "dearseq",
              day_colour = circos_day_colours[["Day 1"]],
              condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM,
-             title_size = CIRCOS_TITLE_SIZE)
+             title_size = CIRCOS_TITLE_SIZE, gap_degree = CIRCOS_GAP_DEGREE)
   render_row(3, arc, legend_placeholder = FALSE, legend_scale = 1.9,
              day_colour = circos_day_colours[["Day 3"]],
              condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM,
-             title_size = CIRCOS_TITLE_SIZE)
+             title_size = CIRCOS_TITLE_SIZE, gap_degree = CIRCOS_GAP_DEGREE)
   render_row(7, arc, legend_placeholder = TRUE,  legend_scale = 1.6,
              day_colour = circos_day_colours[["Day 7"]],
              condition_label_cex = CIRCOS_LABEL_CEX, canvas_lim = CIRCOS_CANVAS_LIM,
-             title_size = CIRCOS_TITLE_SIZE)
+             title_size = CIRCOS_TITLE_SIZE, gap_degree = CIRCOS_GAP_DEGREE)
 }
 
 # =============================================================================
