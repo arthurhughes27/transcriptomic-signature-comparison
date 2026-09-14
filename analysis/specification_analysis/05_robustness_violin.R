@@ -48,4 +48,4 @@ p_violin <- plot_robustness_violin(robustness_metrics)
 ggsave(filename = p_fig, plot = p_violin, width = 35, height = 15, units = "cm")
 message("Saved robustness distribution violin plot to: ", p_fig)
 
-rm(list = ls())
+# rm(list = ls())

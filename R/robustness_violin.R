@@ -55,15 +55,16 @@ plot_robustness_violin <- function(robustness_df,
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
       panel.border       = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
-      strip.text          = ggplot2::element_text(face = "bold", size = 12),
+      strip.text          = ggplot2::element_text(face = "bold", size = 18),
       panel.spacing.x      = grid::unit(14, "pt"),
-      axis.text.x          = ggplot2::element_text(angle = 45, hjust = 1),
-      axis.title = element_text(size = 20),
-      plot.title = element_text(size = 20)
+      axis.text.x          = ggplot2::element_text(angle = 45, hjust = 1, size = 12),
+      axis.text.y = element_text(size = 15),
+      axis.title = element_text(size = 22),
+      plot.title = element_text(size = 23, face = "bold")
     ) +
     ggplot2::labs(
       x     = "Vaccine",
       y     = "Signal-robustness",
-      title = "Distribution of signal-robustness across gene sets, by comparison"
+      title = "Distribution of signal-robustness scores across gene sets"
     )
 }

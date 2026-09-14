@@ -169,8 +169,14 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
       trans = power_trans(0.5)
     ) +
     ggplot2::labs(x = "Vaccine", y = "Gene set aggregate", title = "Mean signal-robustness by gene-set aggregate") +
-    theme(axis.title = element_text(size = 20),
-          plot.title = element_text(size = 20))
+    theme(axis.title = element_text(size = 25),
+          plot.title = element_text(size = 23),
+          axis.text.x = element_text(size = 11),
+          axis.text.y = element_text(size = 14),
+          legend.title = element_text(size = 20),
+          legend.text = element_text(size = 15),
+          legend.key.height = unit(1, units = "cm"),
+          legend.key.spacing = unit(0.75, 'cm'))
 }
 
 #' Build one page of the gene-set-level robustness heatmap

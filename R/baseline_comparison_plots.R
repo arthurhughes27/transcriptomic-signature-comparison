@@ -82,13 +82,15 @@ plot_baseline_significance_comparison <- function(pct_df,
     ggplot2::theme(
       panel.grid.minor  = ggplot2::element_blank(),
       panel.border       = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.6),
-      strip.text          = ggplot2::element_text(face = "bold", size = 14),
+      strip.text          = ggplot2::element_text(face = "bold", size = 17),
       panel.spacing.x      = grid::unit(14, "pt"),
-      axis.text.x          = ggplot2::element_text(angle = 45, hjust = 1),
-      axis.title.x = element_text(size = 17),
-      axis.title.y = element_text(size = 17),
-      axis.text.y         = ggplot2::element_text(size = 12),
-      plot.title = element_text(size = 17, face = "bold"),
+      axis.text.x          = ggplot2::element_text(angle = 45, hjust = 1, size = 10),
+      axis.title.x = element_text(size = 25),
+      axis.title.y = element_text(size = 20),
+      axis.text.y         = ggplot2::element_text(size = 15),
+      plot.title = element_text(size = 28, face = "bold"),
+      legend.title = element_text(size = 18),
+      legend.text = element_text(size = 14)
     ) +
     ggplot2::labs(
       x     = "Vaccine",
