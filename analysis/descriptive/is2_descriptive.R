@@ -48,6 +48,7 @@ vaccine_order <- levels(hipc_merged_all_norm$vaccine_name)
 # =============================================================================
 
 counts <- hipc_merged_all_norm %>%
+  filter(time_post_last_vax != -7) %>% 
   group_by(vaccine_name, vaccine_colour, time_post_last_vax) %>%
   summarise(n = n(), .groups = "drop") %>%
   mutate(
@@ -88,9 +89,9 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
   ) +
   scale_y_discrete(limits = rev(vaccine_order)) +
   labs(
-    x     = "Days post-vaccination",
+    x     = "Days post vaccination",
     y     = "Vaccine",
-    title = "Participants with transcriptomic samples per vaccine across time"
+    title = "Transcriptomic samples in IS2 dataset across time"
   ) +
   theme_minimal(base_size = 18) +
   theme(
@@ -101,7 +102,8 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
     axis.text.x          = element_text(angle = 45, hjust = 1),
     plot.title           = element_text(size = 35, hjust = 0.5, face = "bold"),
     plot.subtitle        = element_text(size = 15, hjust = 0.5),
-    legend.title         = element_text(size = 20, hjust = 0.5),
+    legend.title         = element_text(size = 25, hjust = 0.5, face = "bold"),
+    legend.text          = element_text(size = 18),
     legend.key.spacing.y = unit(0.3, "cm"),
     legend.spacing.y     = unit(1.0, "cm")
   )
