@@ -76,10 +76,8 @@ spec_totals_table <- specification_totals(hipc, raw_grid, posthoc_grid, days = D
   dplyr::mutate(vaccine_name = factor(vaccine_name, levels = default_conditions_order())) |>
   dplyr::arrange(day, vaccine_name) |>
   dplyr::transmute(
-    `Timepoint`                  = sprintf("Day %s", day),
-    `Vaccine`                     = as.character(vaccine_name),
-    `N effective raw specs`        = n_effective_raw_specs,
-    `N effective total specs`       = n_effective_total_specs
+    `Comparison`                    = sprintf("%s (Day %s)", vaccine_name, day),
+    `Effective total specifications` = n_effective_total_specs
   )
 
 save_latex_table(
