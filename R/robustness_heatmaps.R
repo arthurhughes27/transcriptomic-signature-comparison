@@ -108,8 +108,10 @@ summarise_robustness_by_aggregate <- function(robustness_df) {
 #   callers lengthen/resize the colourbar (e.g. the gene-set-level
 #   heatmap's larger legend) without duplicating the whole scale
 #   definition. Defaults to a plain [ggplot2::guide_colorbar()].
+# @param strip_text_size Facet ("Day X") strip title size, in points.
 robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors = NULL,
-                                      colorbar_guide = ggplot2::guide_colorbar()) {
+                                      colorbar_guide = ggplot2::guide_colorbar(),
+                                      strip_text_size = 12) {
   list(
     ggh4x::facet_grid2(
       cols = ggplot2::vars(time), scales = "free_x", space = "free_x",
@@ -128,7 +130,7 @@ robustness_heatmap_layers <- function(low_colour, high_colour, times, day_colors
     ggplot2::theme(
       panel.grid       = ggplot2::element_blank(),
       panel.border     = ggplot2::element_rect(colour = "black", fill = NA, linewidth = 0.5),
-      strip.text        = ggplot2::element_text(face = "bold", size = 12),
+      strip.text        = ggplot2::element_text(face = "bold", size = strip_text_size),
       panel.spacing.x    = grid::unit(14, "pt"),
       axis.text.x        = ggplot2::element_text(angle = 45, hjust = 1)
     )
@@ -223,6 +225,11 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
   # same between pages" request in plot_robustness_heatmap_genesets().
   panel_height <- grid::unit(length(gene_set_order) * row_height_cm, "cm")
 
+  # Bottom margin on the title pushes it away from the keys below it - the
+  # colourbar in particular (Signal-robustness, p_main below) was nearly
+  # touching its own upper limit without this.
+  legend_title_margin <- ggplot2::margin(b = 14)
+
   p_strip <- ggplot2::ggplot(annotation_data, ggplot2::aes(x = 1, y = gs.label, fill = gs.aggregate)) +
     ggplot2::geom_tile() +
     ggplot2::scale_fill_manual(
@@ -236,7 +243,7 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
     ggh4x::force_panelsizes(rows = panel_height) +
     ggplot2::theme_void() +
     ggplot2::theme(
-      legend.title = ggplot2::element_text(size = legend_title_size),
+      legend.title = ggplot2::element_text(size = legend_title_size, face = "bold", margin = legend_title_margin),
       legend.text  = ggplot2::element_text(size = legend_text_size)
     )
 
@@ -270,7 +277,8 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
       low_colour, high_colour, times = plot_data$time,
       colorbar_guide = ggplot2::guide_colorbar(
         barheight = grid::unit(16, "cm"), barwidth = grid::unit(1.4, "cm")
-      )
+      ),
+      strip_text_size = 20
     ) +
     ggplot2::labs(
       x = "Vaccine", y = NULL,
@@ -282,7 +290,7 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
                    axis.title.y = ggplot2::element_text(size = 32),
                    plot.title = ggplot2::element_text(size = 34, face = "bold"),
                    axis.text.x = ggplot2::element_text(size = 15),
-                   legend.title = ggplot2::element_text(size = legend_title_size),
+                   legend.title = ggplot2::element_text(size = legend_title_size, face = "bold", margin = legend_title_margin),
                    legend.text = ggplot2::element_text(size = legend_text_size),
                   )
 
