@@ -54,7 +54,7 @@ fs::dir_create(out_dir)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-ROWS_PER_PAGE <- 52
+ROWS_PER_PAGE <- 45
 
 # Width widened from 45 to 52cm to fit the larger Aggregate/Signal-robustness
 # legends (see R/robustness_heatmaps.R::build_geneset_heatmap_page()); height

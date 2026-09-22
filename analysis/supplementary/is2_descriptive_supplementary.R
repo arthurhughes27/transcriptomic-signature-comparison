@@ -111,6 +111,7 @@ vaccine_legend_layer <- function(df) {
 # (R/plot_helpers.R's assign_day_colours()/day_highlight_bands()).
 
 study_bubble_counts <- hipc_merged_all_norm %>%
+  filter(time_post_last_vax >=0) %>% 
   group_by(study_accession_unique, vaccine_colour,
            time_post_last_vax, vaccine_name) %>%
   summarise(n = n(), .groups = "drop") %>%
