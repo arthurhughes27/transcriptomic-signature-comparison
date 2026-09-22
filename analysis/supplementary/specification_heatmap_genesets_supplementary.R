@@ -15,11 +15,15 @@
 # GENESET_PAGE_WIDTH_CM/HEIGHT_CM below, calibrated to the true A4 aspect
 # ratio (1:sqrt(2)) at GENESET_PAGE_WIDTH_CM's scale rather than a literal
 # 21x29.7cm sheet, so the wide comparison-column layout still has room.
-# ROWS_PER_PAGE is scaled to match: at the previous 45cm x 40cm page,
-# 45 rows only filled ~60% of the page height (row density ~0.53cm/row);
-# ROWS_PER_PAGE below targets ~92% fill of the new, taller page at that
-# same row density/text size - full names/descriptions, at the same
-# readable row height as before, just more of them per page. Re-tune if a
+#
+# ROW_HEIGHT_CM is forced identically on every page's panel (see
+# plot_robustness_heatmap_genesets()'s row_height_cm argument - the fix for
+# rows stretching to fill a short last page rather than keeping the same
+# height as a full page). Set to 85% of GENESET_PAGE_HEIGHT_CM /
+# ROWS_PER_PAGE, i.e. a full (ROWS_PER_PAGE-row) page's panel targets ~85%
+# of the total page height, leaving the rest for the plot title, axis
+# title/text, and legend that sit outside the panel now that its size is
+# forced rather than auto-derived. Re-tune (along with ROWS_PER_PAGE) if a
 # generated page over/underfills once you can see the actual PDF.
 #
 # Safe to run against partial results (e.g. while
@@ -63,6 +67,8 @@ ROWS_PER_PAGE <- 45
 GENESET_PAGE_WIDTH_CM  <- 52
 GENESET_PAGE_HEIGHT_CM <- 45 * sqrt(2)  # ~63.6cm
 
+ROW_HEIGHT_CM <- 0.85 * GENESET_PAGE_HEIGHT_CM / ROWS_PER_PAGE
+
 # ── Load data ─────────────────────────────────────────────────────────────────
 
 BTM                  <- readRDS(p_data_btm)
@@ -73,7 +79,9 @@ robustness_annotated <- join_geneset_aggregates(robustness_metrics, BTM)
 # SUPPLEMENTARY FIGURE — gene-set-level heatmap
 # =============================================================================
 
-p_genesets_pages <- plot_robustness_heatmap_genesets(robustness_annotated, rows_per_page = ROWS_PER_PAGE)
+p_genesets_pages <- plot_robustness_heatmap_genesets(
+  robustness_annotated, rows_per_page = ROWS_PER_PAGE, row_height_cm = ROW_HEIGHT_CM
+)
 
 save_multi_page_pdf(
   p_genesets_pages, path = p_fig_genesets,
