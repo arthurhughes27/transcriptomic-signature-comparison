@@ -190,24 +190,38 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
 #'   aggregate has any gene sets on this particular page (`limits =
 #'   names(aggregate_colour_map)` forces every page's legend to list all
 #'   of them, not just the ones actually present).
-#' @param low_colour,high_colour,strip_width See
+#' @param low_colour,high_colour,strip_width,label_width,label_cutoff See
 #'   [plot_robustness_heatmap_genesets()].
 #' @param page_number,total_pages This page's 1-indexed position and the
 #'   total page count, appended to the plot title as "(page X/N)" so a
 #'   printed/exported page can always be placed back in the sequence.
+#' @param row_height_cm Exact panel height (in cm) PER ROW, applied via
+#'   [ggh4x::force_panelsizes()] to every sub-panel below - see
+#'   [plot_robustness_heatmap_genesets()] for why this is forced rather
+#'   than left to auto-stretch.
 #'
-#' @return A patchwork object (aggregate strip + main heatmap, legends
-#'   collected together).
+#' @return A patchwork object (aggregate strip + row-label column + main
+#'   heatmap, legends collected together).
 #' @keywords internal
 build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colour_map,
                                        low_colour, high_colour, strip_width,
-                                       page_number, total_pages) {
+                                       label_width, label_cutoff,
+                                       page_number, total_pages, row_height_cm) {
   annotation_data <- dplyr::distinct(plot_data, gs.label, gs.aggregate)
 
   # Shared sizing so the two legends (Aggregate, Signal-robustness) read
   # consistently once collected side by side by patchwork.
   legend_title_size <- 26
   legend_text_size  <- 20
+
+  # Forced identically on every sub-panel below (not just the main heatmap)
+  # so their rows stay vertically aligned with each other, and - critically
+  # - so a page with fewer gene sets than rows_per_page gets a
+  # proportionally SHORTER panel (leaving blank space below on the page)
+  # rather than the existing rows being stretched to fill the same total
+  # height as a full page. See the "exact dimensions of the rows... exact
+  # same between pages" request in plot_robustness_heatmap_genesets().
+  panel_height <- grid::unit(length(gene_set_order) * row_height_cm, "cm")
 
   p_strip <- ggplot2::ggplot(annotation_data, ggplot2::aes(x = 1, y = gs.label, fill = gs.aggregate)) +
     ggplot2::geom_tile() +
@@ -219,15 +233,40 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
       )
     ) +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
+    ggh4x::force_panelsizes(rows = panel_height) +
     ggplot2::theme_void() +
     ggplot2::theme(
       legend.title = ggplot2::element_text(size = legend_title_size),
       legend.text  = ggplot2::element_text(size = legend_text_size)
     )
 
+  # Row labels (truncated, see truncate_geneset_label() - R/plot_helpers.R)
+  # drawn as their own fixed-width geom_text column instead of the main
+  # panel's y-axis text: ggplot auto-sizes an axis-text column to fit
+  # whatever's actually on that page, so on the old layout a page with
+  # longer names left LESS room for the heatmap panel than a page with
+  # shorter ones, misaligning the panel's size/position across pages (the
+  # "dimensions ... not aligned" request). A dedicated column with a FIXED
+  # relative width (label_width, set by patchwork below, same on every
+  # page regardless of content) decouples the main panel's geometry from
+  # label content entirely.
+  label_pt <- 13
+  label_mm <- label_pt / (72.27 / 25.4)
+
+  p_labels <- ggplot2::ggplot(
+    annotation_data,
+    ggplot2::aes(x = 1, y = gs.label, label = truncate_geneset_label(as.character(gs.label), label_cutoff))
+  ) +
+    ggplot2::geom_text(hjust = 1, size = label_mm) +
+    ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+    ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
+    ggh4x::force_panelsizes(rows = panel_height) +
+    ggplot2::theme_void()
+
   p_main <- ggplot2::ggplot(plot_data, ggplot2::aes(x = condition, y = gs.label, fill = robustness)) +
     ggplot2::geom_tile() +
     ggplot2::scale_y_discrete(limits = rev(gene_set_order)) +
+    ggh4x::force_panelsizes(rows = panel_height) +
     robustness_heatmap_layers(
       low_colour, high_colour, times = plot_data$time,
       colorbar_guide = ggplot2::guide_colorbar(
@@ -238,7 +277,8 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
       x = "Vaccine", y = NULL,
       title = sprintf("Signal-robustness by gene set (page %d/%d)", page_number, total_pages)
     ) +
-    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 13),
+    ggplot2::theme(axis.text.y = ggplot2::element_blank(),
+                   axis.ticks.y = ggplot2::element_blank(),
                    axis.title.x = ggplot2::element_text(size = 32),
                    axis.title.y = ggplot2::element_text(size = 32),
                    plot.title = ggplot2::element_text(size = 34, face = "bold"),
@@ -247,7 +287,10 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
                    legend.text = ggplot2::element_text(size = legend_text_size),
                   )
 
-  patchwork::wrap_plots(p_strip, p_main, ncol = 2, widths = c(strip_width, 20), guides = "collect")
+  patchwork::wrap_plots(
+    p_strip, p_labels, p_main, ncol = 3,
+    widths = c(strip_width, label_width, 20), guides = "collect"
+  )
 }
 
 #' Plot the gene-set-level robustness heatmap (supplementary figure),
@@ -271,11 +314,30 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
 #' since an aggregate can straddle a page boundary). Every page uses the
 #' same row height and the same comparison columns, so pages are directly
 #' comparable and consistently sized regardless of how large the aggregate
-#' they happen to fall in is. Save the result with [save_multi_page_pdf()] -
-#' the driver scripts (04_specification_heatmap_aggregate.R and
-#' analysis/supplementary/specification_heatmap_genesets_supplementary.R) pair the default
-#' `rows_per_page` with an A4 page size so each page prints at a readable
-#' row height.
+#' they happen to fall in is.
+#'
+#' Two things are forced identically across every page, rather than left to
+#' ggplot's normal auto-layout, so pages stay visually comparable even when
+#' their content differs (varying label lengths; a last page with fewer
+#' than `rows_per_page` gene sets):
+#'   - the main heatmap panel's row labels are drawn in their own
+#'     fixed-relative-width column (`label_width`, `label_cutoff` - see
+#'     [truncate_geneset_label()], R/plot_helpers.R) instead of as the
+#'     panel's own y-axis text, whose auto-sized width would otherwise vary
+#'     with the longest label on that particular page, shifting the main
+#'     panel's size/position page to page;
+#'   - every sub-panel's height is forced to `rows_per_page_on_this_page *
+#'     row_height_cm` via [ggh4x::force_panelsizes()], so the row height
+#'     itself is identical on every page - a page with fewer gene sets
+#'     (typically the last one) gets a proportionally SHORTER panel with
+#'     blank space below on the page, rather than its rows being stretched
+#'     to fill the same total panel height as a full page.
+#'
+#' Save the result with [save_multi_page_pdf()] - the driver scripts
+#' (04_specification_heatmap_aggregate.R and analysis/supplementary/
+#' specification_heatmap_genesets_supplementary.R) pair `rows_per_page`
+#' with `row_height_cm` and an A4-ratio page size so each page prints at a
+#' readable row height.
 #'
 #' @param robustness_df Output of [join_geneset_aggregates()].
 #' @param conditions_order Vaccine ordering (see [default_conditions_order()]).
@@ -286,10 +348,25 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
 #'   (or NA) in every comparison are excluded before plotting, and the
 #'   number dropped is reported via `message()`.
 #' @param low_colour,high_colour Gradient endpoints.
-#' @param strip_width Relative width of the annotation strip vs. the main
-#'   heatmap panel.
+#' @param strip_width Relative width of the aggregate-colour annotation
+#'   strip vs. the main heatmap panel (the row-label column, `label_width`,
+#'   sits between them - see [build_geneset_heatmap_page()]).
+#' @param label_width Relative width of the row-label column - tune this
+#'   together with `label_cutoff` (longer allowed labels need a wider
+#'   column to avoid running into the aggregate strip on their left).
+#' @param label_cutoff Passed to [truncate_geneset_label()] - the gene-set
+#'   name truncation length. NULL keeps full, untruncated labels (not
+#'   recommended here - an unbounded label length reintroduces the
+#'   page-to-page column-width risk `label_width`'s fixed width is meant to
+#'   avoid).
 #' @param rows_per_page Maximum gene sets per page. `Inf` reproduces the
 #'   previous single-figure behaviour (one very tall page).
+#' @param row_height_cm Exact panel height per row (cm), forced identically
+#'   on every page regardless of how many gene sets that page actually has
+#'   - see the function-level comment above. Pick this to match the page
+#'   size/`rows_per_page` the driver script actually uses (e.g. page height
+#'   in cm / `rows_per_page`), so a full page's panel fills the intended
+#'   height exactly.
 #'
 #' @return A list of patchwork objects, one per page.
 plot_robustness_heatmap_genesets <- function(robustness_df,
@@ -299,7 +376,10 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
                                              low_colour = "white",
                                              high_colour = "#238b45",
                                              strip_width = 1,
-                                             rows_per_page = 45) {
+                                             label_width = 6,
+                                             label_cutoff = 20,
+                                             rows_per_page = 45,
+                                             row_height_cm = 1.4) {
 
   plot_data <- order_robustness_comparisons(robustness_df, conditions_order)
 
@@ -347,8 +427,11 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
       low_colour               = low_colour,
       high_colour               = high_colour,
       strip_width                = strip_width,
-      page_number               = page_number,
-      total_pages               = total_pages
+      label_width               = label_width,
+      label_cutoff               = label_cutoff,
+      page_number                 = page_number,
+      total_pages                 = total_pages,
+      row_height_cm                = row_height_cm
     )
   })
 }
