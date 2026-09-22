@@ -190,8 +190,8 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
 #'   aggregate has any gene sets on this particular page (`limits =
 #'   names(aggregate_colour_map)` forces every page's legend to list all
 #'   of them, not just the ones actually present).
-#' @param low_colour,high_colour,strip_width,label_width,label_cutoff See
-#'   [plot_robustness_heatmap_genesets()].
+#' @param low_colour,high_colour,strip_width,label_width,label_cutoff,label_size
+#'   See [plot_robustness_heatmap_genesets()].
 #' @param page_number,total_pages This page's 1-indexed position and the
 #'   total page count, appended to the plot title as "(page X/N)" so a
 #'   printed/exported page can always be placed back in the sequence.
@@ -205,7 +205,7 @@ plot_robustness_heatmap_aggregate <- function(robustness_df,
 #' @keywords internal
 build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colour_map,
                                        low_colour, high_colour, strip_width,
-                                       label_width, label_cutoff,
+                                       label_width, label_cutoff, label_size,
                                        page_number, total_pages, row_height_cm) {
   annotation_data <- dplyr::distinct(plot_data, gs.label, gs.aggregate)
 
@@ -250,8 +250,7 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
   # relative width (label_width, set by patchwork below, same on every
   # page regardless of content) decouples the main panel's geometry from
   # label content entirely.
-  label_pt <- 13
-  label_mm <- label_pt / (72.27 / 25.4)
+  label_mm <- label_size / (72.27 / 25.4)
 
   p_labels <- ggplot2::ggplot(
     annotation_data,
@@ -352,13 +351,15 @@ build_geneset_heatmap_page <- function(plot_data, gene_set_order, aggregate_colo
 #'   strip vs. the main heatmap panel (the row-label column, `label_width`,
 #'   sits between them - see [build_geneset_heatmap_page()]).
 #' @param label_width Relative width of the row-label column - tune this
-#'   together with `label_cutoff` (longer allowed labels need a wider
-#'   column to avoid running into the aggregate strip on their left).
+#'   together with `label_cutoff`/`label_size` (longer allowed labels, or a
+#'   bigger font, need a wider column to avoid running into the aggregate
+#'   strip on their left).
 #' @param label_cutoff Passed to [truncate_geneset_label()] - the gene-set
 #'   name truncation length. NULL keeps full, untruncated labels (not
 #'   recommended here - an unbounded label length reintroduces the
 #'   page-to-page column-width risk `label_width`'s fixed width is meant to
 #'   avoid).
+#' @param label_size Row-label font size, in points.
 #' @param rows_per_page Maximum gene sets per page. `Inf` reproduces the
 #'   previous single-figure behaviour (one very tall page).
 #' @param row_height_cm Exact panel height per row (cm), forced identically
@@ -376,8 +377,9 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
                                              low_colour = "white",
                                              high_colour = "#238b45",
                                              strip_width = 1,
-                                             label_width = 6,
-                                             label_cutoff = 20,
+                                             label_width = 8,
+                                             label_cutoff = 28,
+                                             label_size = 15,
                                              rows_per_page = 45,
                                              row_height_cm = 1.4) {
 
@@ -429,7 +431,8 @@ plot_robustness_heatmap_genesets <- function(robustness_df,
       strip_width                = strip_width,
       label_width               = label_width,
       label_cutoff               = label_cutoff,
-      page_number                 = page_number,
+      label_size                  = label_size,
+      page_number                   = page_number,
       total_pages                 = total_pages,
       row_height_cm                = row_height_cm
     )
