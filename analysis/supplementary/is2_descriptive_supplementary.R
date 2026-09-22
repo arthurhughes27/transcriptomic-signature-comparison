@@ -158,7 +158,7 @@ p_study_bubble <- ggplot(study_bubble_counts, aes(x = time_post_last_vax, y = st
   labs(
     x     = "Days post-vaccination",
     y     = "Study identifier",
-    title = "Participants with transcriptomic samples per study across time"
+    title = "Participants with transcriptomic samples per trial across time"
   ) +
   theme_minimal(base_size = 18) +
   theme(
