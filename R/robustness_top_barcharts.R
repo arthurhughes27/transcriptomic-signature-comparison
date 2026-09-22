@@ -18,38 +18,6 @@
 # equivalent of the circos plots' plot_row_annotation() coloured label box.
 # =============================================================================
 
-#' Truncate a gene set label's name, keeping its trailing "(CODE)" intact
-#'
-#' Gene set labels (`geneset.names.descriptions`, e.g. "viral sensing and
-#' immunity (M183)") are a free-text name followed by a short parenthesised
-#' code. For dense figures, the name alone is shortened to `cutoff`
-#' characters with an ellipsis, e.g. `truncate_geneset_label("viral sensing
-#' and immunity (M183)", 13)` -> `"viral sensing... (M183)"` - the code
-#' itself is never touched, so gene sets stay identifiable even when
-#' truncated.
-#'
-#' @param label Character vector of full gene set labels.
-#' @param cutoff Maximum characters to keep from the name portion (before
-#'   the trailing "(CODE)"). Labels whose name is already `cutoff`
-#'   characters or fewer are returned unchanged (no ellipsis added).
-#'
-#' @return Character vector, same length as `label`. A label with no
-#'   trailing "(...)" group is returned unchanged.
-truncate_geneset_label <- function(label, cutoff) {
-  matches <- regmatches(label, regexec("^(.*?)\\s*(\\([^()]*\\))\\s*$", label))
-
-  vapply(seq_along(label), function(i) {
-    parts <- matches[[i]]
-    if (length(parts) != 3) return(label[i])
-
-    name <- parts[2]
-    code <- parts[3]
-    if (nchar(name) <= cutoff) return(paste(name, code))
-
-    sprintf("%s... %s", substr(name, 1, cutoff), code)
-  }, character(1))
-}
-
 #' Top-N most robust gene sets within each vaccine x timepoint comparison
 #'
 #' Unlike [build_top_robust_table()] (one global top-N ranking across every

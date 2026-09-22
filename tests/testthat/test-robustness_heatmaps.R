@@ -200,7 +200,9 @@ test_that("plot_robustness_heatmap_genesets() displays the full gs.label, not th
     robustness_df, conditions_order = "Vaccine A", aggregate_colors = "#111111"
   )
 
-  p_main <- pages[[1]][[2]]
+  # Panels are now aggregate strip / row-label column / main heatmap - see
+  # build_geneset_heatmap_page() (R/robustness_heatmaps.R).
+  p_main <- pages[[1]][[3]]
   expect_setequal(as.character(p_main$data$gs.label), c("Full description one", "Full description two"))
   expect_false(any(c("gs1", "gs2") %in% as.character(p_main$data$gs.label)))
 })
