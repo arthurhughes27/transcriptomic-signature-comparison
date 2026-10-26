@@ -105,7 +105,15 @@ p_aggregate_presentation <- plot_robustness_heatmap_aggregate(robustness_annotat
     # Each day's panel outline (panel.border, set by robustness_heatmap_
     # layers() in R/robustness_heatmaps.R) - thickened from its default
     # 0.5 to stand out more at this figure's larger overall scale.
-    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1.2)
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1.2),
+    # The "Day X" title strip above each panel has its own border, same
+    # thickness as panel.border above for consistency. Only colour/
+    # linewidth are set here (not fill) - day_facet_strip()'s per-day
+    # background colours (ggh4x::elem_list_rect(fill = ...)) still apply
+    # on top, since elem_list_rect() only overrides the rect properties
+    # it's explicitly given, inheriting the rest (colour, linewidth) from
+    # this theme element.
+    strip.background = element_rect(colour = "black", linewidth = 1.2)
   )
 
 print(p_aggregate_presentation)
