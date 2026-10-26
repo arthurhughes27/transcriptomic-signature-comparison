@@ -74,12 +74,20 @@ robustness_annotated <- join_geneset_aggregates(robustness_metrics, BTM)
 # =============================================================================
 
 p_aggregate_presentation <- plot_robustness_heatmap_aggregate(robustness_annotated) +
+  # labs(fill = ...) alone doesn't actually change this title:
+  # plot_robustness_heatmap_aggregate() sets an EXPLICIT name =
+  # "Mean signal-robustness" on its own scale_fill_gradient(), and an
+  # explicit scale name takes precedence over labs()'s fallback label, so
+  # the labs() call silently had no effect. guide_colorbar(title = ...)
+  # (via guides()) sets the guide's own title directly, which DOES
+  # override the scale's name.
+  #
   # expression(atop(...)) is ggplot2/plotmath's way of rendering a maths
   # symbol (here pi[g], i.e. $\pi_{g}$) as a legend title, stacked over a
   # second line ("Mean") - plotmath expressions don't support embedded
   # "\n" the way a plain string does, hence atop() instead of the
   # previous "Mean\nsignal-\nrobustness".
-  labs(fill = expression(atop("Mean", pi[g]))) +
+  guides(fill = guide_colorbar(title = expression(atop("Mean", pi[g])))) +
   theme(
     plot.title    = element_text(size = 40, face = "bold"),
     axis.title    = element_text(size = 40),
