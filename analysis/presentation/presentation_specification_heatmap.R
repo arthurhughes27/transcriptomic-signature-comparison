@@ -101,7 +101,11 @@ p_aggregate_presentation <- plot_robustness_heatmap_aggregate(robustness_annotat
     legend.title  = element_text(size = 30, hjust = 0.5),
     legend.text   = element_text(size = 20),
     legend.key.height = unit(1.3, "cm"),
-    legend.key.width  = unit(2, "cm")
+    legend.key.width  = unit(2, "cm"),
+    # Each day's panel outline (panel.border, set by robustness_heatmap_
+    # layers() in R/robustness_heatmaps.R) - thickened from its default
+    # 0.5 to stand out more at this figure's larger overall scale.
+    panel.border = element_rect(colour = "black", fill = NA, linewidth = 1.2)
   )
 
 print(p_aggregate_presentation)
