@@ -22,9 +22,11 @@
 #     label's horizontal footprint is just the font's character width,
 #     independent of the (fairly long) vaccine name strings or how big the
 #     font is, unlike angled text;
-#   - the legend title is wrapped onto 3 lines (via labs(fill = ...), not
-#     by changing the underlying scale) - a long one-line title at a
-#     bigger font would force a wider legend column, eating into the
+#   - the legend title is replaced with a short plotmath expression
+#     (`expression(atop("Mean", pi[g]))`, i.e. "Mean" over $\pi_{g}$, via
+#     labs(fill = ...), not by changing the underlying scale) - a long
+#     one-line title at a bigger font would force a wider legend column,
+#     eating into the
 #     panel/x-axis-label width that's meant to stay fixed.
 # XAXIS_TEXT_ANGLE below is kept as an easy-to-tweak constant if a
 # different angle (e.g. 60-70 degrees) reads better once you see the PDF.
@@ -72,7 +74,12 @@ robustness_annotated <- join_geneset_aggregates(robustness_metrics, BTM)
 # =============================================================================
 
 p_aggregate_presentation <- plot_robustness_heatmap_aggregate(robustness_annotated) +
-  labs(fill = "Mean\nsignal-\nrobustness") +
+  # expression(atop(...)) is ggplot2/plotmath's way of rendering a maths
+  # symbol (here pi[g], i.e. $\pi_{g}$) as a legend title, stacked over a
+  # second line ("Mean") - plotmath expressions don't support embedded
+  # "\n" the way a plain string does, hence atop() instead of the
+  # previous "Mean\nsignal-\nrobustness".
+  labs(fill = expression(atop("Mean", pi[g]))) +
   theme(
     plot.title    = element_text(size = 40, face = "bold"),
     axis.title    = element_text(size = 40),
@@ -85,7 +92,8 @@ p_aggregate_presentation <- plot_robustness_heatmap_aggregate(robustness_annotat
     strip.text    = element_text(size = 30, face = "bold"),
     legend.title  = element_text(size = 30, hjust = 0.5),
     legend.text   = element_text(size = 20),
-    legend.key.height = unit(1.3, "cm")
+    legend.key.height = unit(1.3, "cm"),
+    legend.key.width  = unit(2, "cm")
   )
 
 print(p_aggregate_presentation)
