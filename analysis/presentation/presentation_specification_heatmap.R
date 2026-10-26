@@ -56,10 +56,10 @@ fs::dir_create(out_dir)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-FIG_WIDTH_CM  <- 35  # same as the main-text figure - fixed per the request
+FIG_WIDTH_CM  <- 50  # same as the main-text figure - fixed per the request
 FIG_HEIGHT_CM <- 32  # vs. the main-text figure's 20cm - see module comment
 
-XAXIS_TEXT_ANGLE <- 90  # try e.g. 60-70 for a part-angled alternative
+XAXIS_TEXT_ANGLE <- 45  # try e.g. 60-70 for a part-angled alternative
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 
@@ -74,17 +74,17 @@ robustness_annotated <- join_geneset_aggregates(robustness_metrics, BTM)
 p_aggregate_presentation <- plot_robustness_heatmap_aggregate(robustness_annotated) +
   labs(fill = "Mean\nsignal-\nrobustness") +
   theme(
-    plot.title    = element_text(size = 30, face = "bold"),
-    axis.title    = element_text(size = 32),
+    plot.title    = element_text(size = 40, face = "bold"),
+    axis.title    = element_text(size = 40),
     axis.text.y   = element_text(size = 20),
     axis.text.x   = element_text(
       size = 20, angle = XAXIS_TEXT_ANGLE,
       hjust = 1,
       vjust = if (XAXIS_TEXT_ANGLE == 90) 0.5 else 1
     ),
-    strip.text    = element_text(size = 22, face = "bold"),
-    legend.title  = element_text(size = 20, hjust = 0.5),
-    legend.text   = element_text(size = 16),
+    strip.text    = element_text(size = 30, face = "bold"),
+    legend.title  = element_text(size = 30, hjust = 0.5),
+    legend.text   = element_text(size = 20),
     legend.key.height = unit(1.3, "cm")
   )
 
@@ -96,4 +96,4 @@ ggsave(
 )
 message("Saved presentation aggregate-level robustness heatmap to: ", p_fig_aggregate)
 
-rm(list = ls())
+# rm(list = ls())
