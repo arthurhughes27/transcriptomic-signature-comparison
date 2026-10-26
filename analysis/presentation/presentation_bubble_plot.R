@@ -105,7 +105,7 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
   labs(
     x     = "Days post vaccination",
     y     = "Vaccine",
-    title = "Paired transcriptomic samples per vaccine (days 1, 3, 7)"
+    title = "IS2 dataset: transcriptomic samples"
   ) +
   theme_minimal(base_size = 26) +
   theme(
@@ -113,7 +113,7 @@ bubble_plot <- ggplot(counts, aes(x = time_post_last_vax, y = vaccine_name)) +
     panel.grid.minor     = element_blank(),
     axis.title           = element_text(size = 38),
     axis.text            = element_text(size = 24),
-    axis.text.x          = element_text(angle = 45, hjust = 1),
+    axis.text.x          = element_text(hjust = 1),
     plot.title           = element_text(size = 44, hjust = 0.5, face = "bold"),
     legend.title         = element_text(size = 32, hjust = 0.5, face = "bold"),
     legend.text          = element_text(size = 24),
@@ -127,7 +127,7 @@ ggsave(
   filename = "vaccine_bubble_plot_presentation.pdf",
   path     = presentation_figures_folder,
   plot     = bubble_plot,
-  width    = 40, height = 25, units = "cm"
+  width    = 40, height = 28, units = "cm"
 )
 
 rm(list = ls())
